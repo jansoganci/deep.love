@@ -1,20 +1,23 @@
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'wouter';
+import { useEntitlement } from '../hooks/useEntitlement';
 
 const PaywallScreen = () => {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
+  const { setIsPro } = useEntitlement();
   
   // Navigate back to matches screen
   const handleContinueFree = () => {
     setLocation('/matches');
   };
   
-  // In a real app, this would initiate a payment flow
+  // Mock payment process and upgrade user to Pro
   const handleSubscribe = (plan: 'monthly' | 'yearly') => {
     console.log(`Subscribe to ${plan} plan`);
-    // This is a demo, so we just log the action
-    // In a real app, this would open a payment processor
+    // Set user to Pro status and redirect to matches
+    setIsPro(true);
+    setLocation('/matches');
   };
   
   return (
