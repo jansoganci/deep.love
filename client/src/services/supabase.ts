@@ -34,8 +34,8 @@ export async function uploadAvatar(
       throw new Error('No storage buckets found. Please create a bucket in your Supabase dashboard.');
     }
     
-    // Get the first available bucket name (as a fallback)
-    const bucketName = buckets[0]?.name || 'avatars_bucket';
+    // Use the exact bucket name "avatars" that you created in Supabase
+    const bucketName = 'avatars';
     console.log(`Using bucket: ${bucketName}`);
     
     // Attempt the upload
