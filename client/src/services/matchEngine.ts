@@ -1,5 +1,5 @@
 import { UserCriteria, Profile } from '../types';
-import mockProfiles from '../../data/mockProfiles.json';
+import mockProfiles from '../../../data/mockProfiles.json';
 
 // Calculate match percentage based on criteria
 function calculateMatchPercentage(profile: Profile, criteria: UserCriteria): number {
