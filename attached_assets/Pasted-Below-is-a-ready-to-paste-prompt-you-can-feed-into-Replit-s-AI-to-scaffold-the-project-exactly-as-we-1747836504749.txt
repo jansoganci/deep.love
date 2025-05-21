@@ -1,0 +1,55 @@
+Below is a ready-to-paste prompt you can feed into Replit’s AI to scaffold the project exactly as we discussed. Feel free to tweak, but this already covers core goal, tech stack, i18n, and “future iOS port” constraints.
+
+---
+
+**Prompt (English)**
+
+```
+You are an expert Replit project scaffolder. Please create a mobile-first web MVP called “Deep Love”.
+
+✨ Core Concept
+• A playful matchmaking app that asks users to build a profile, pick partner criteria, then shows AI-generated best matches.
+• Runs as a responsive web app on Replit today, but must be designed so most code (≈80 %) ports cleanly to a future iOS build with React Native + Expo.
+
+🔧 Tech Choices
+1. Frontend: React 18 + TypeScript + Vite.  
+2. Styling: Tailwind CSS (mobile-first utility classes).  
+3. State & routing: React Router DOM (Expo Router later).  
+4. Internationalisation: react-i18next. Default language = **en**, but wire every UI string through i18n JSON files—no hard-coded English. Place locale files in `src/i18n/en.json` (seed with a few keys).  
+5. Component architecture (atomic > screens):  
+```
+
+src/
+components/   # Button, Card, SwipeDeck …
+screens/      # Onboarding, Criteria, Matches, Paywall
+services/     # matchEngine.ts, api.ts
+hooks/
+i18n/
+assets/
+
+```
+6. Back-end placeholder: create a simple `/data/mockProfiles.json` file and an in-memory matchEngine in `services/matchEngine.ts` (seeded-random). No database for now.
+
+🚀 Must-Have Features for the MVP
+• **OnboardingScreen** – user uploads one photo + fills name, age, short bio.  
+• **CriteriaScreen** – age range slider + multi-select chips (hobbies etc.).  
+• **MatchesScreen** – swipe left/right UI using `react-swipe-card`; show up to 20 swipes per day (store count in localStorage).  
+• **PaywallScreen** – when swipe quota exhausted, show dummy “Upgrade to Deep Love Pro” banner.  
+• **LanguageSelector** component – dropdown that calls `i18n.changeLanguage()` (even if only EN is present).  
+• All UI strings must come from i18n keys like `t('onboarding.title')`.
+
+📱 iOS Port Readiness
+• Avoid any browser-only APIs; keep code React Native-friendly.  
+• Encapsulate swipe logic in its own `<SwipeDeck/>` component so we can later swap implementation for `react-native-deck-swiper`.  
+• Structure navigation so React Router paths mirror Expo Router file names.
+
+🎯 Deliverables
+1. Complete Vite project bootstrapped with the folder structure above.  
+2. Example locale file (`en.json`) with ~10 keys used across screens.  
+3. Placeholder mockProfiles JSON with at least 5 sample profiles.  
+4. Basic Tailwind config already set up (JIT, dark mode = class).  
+5. Clear README explaining how to run (`npm i && npm run dev`) and which folders to touch next.
+
+Do not generate any backend server code; everything must run client-side today.
+
+```
