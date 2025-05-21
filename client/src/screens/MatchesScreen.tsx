@@ -5,9 +5,11 @@ import SwipeDeck from '../components/SwipeDeck';
 import FreemiumBanner from '../components/FreemiumBanner';
 import BannerAdPlaceholder from '../components/BannerAdPlaceholder';
 import { getMatches } from '../services/matchEngine';
-import { loadUserCriteria } from '../services/storage';
+import { loadUserCriteria, loadUserProfile } from '../services/storage';
 import { useSwipeLimit } from '../hooks/useSwipeLimit';
 import { useEntitlement } from '../hooks/useEntitlement';
+import { supabase, recordSwipe } from '../services/supabase';
+import { useToast } from '../hooks/use-toast';
 import { Profile } from '../types';
 
 const MatchesScreen = () => {
@@ -17,32 +19,61 @@ const MatchesScreen = () => {
   const { swipesLeft, registerSwipe, resetMidnight } = useSwipeLimit();
   const { isPro } = useEntitlement();
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+  const [showMatchModal, setShowMatchModal] = useState(false);
+  const [matchedProfile, setMatchedProfile] = useState<Profile | null>(null);
+  const [currentUser, setCurrentUser] = useState<{id: string} | null>(null);
   
   // Load matches and check swipe limit on mount
   useEffect(() => {
-    // Reset swipes if it's a new day
-    resetMidnight();
-    
-    const userCriteria = loadUserCriteria();
-    
-    if (!userCriteria) {
-      // Redirect to criteria screen if no criteria is set
-      setLocation('/criteria');
-      return;
+    async function initializeScreen() {
+      try {
+        // Reset swipes if it's a new day
+        resetMidnight();
+        
+        const userCriteria = loadUserCriteria();
+        const userProfile = loadUserProfile();
+        
+        if (!userCriteria) {
+          // Redirect to criteria screen if no criteria is set
+          setLocation('/criteria');
+          return;
+        }
+        
+        // Try to get the authenticated user from Supabase
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        // If we have a user, set it in state
+        if (user) {
+          setCurrentUser({ id: user.id });
+        } else {
+          // For testing purposes, we'll create a mock user ID if not authenticated
+          setCurrentUser({ id: 'test-user-id-123' });
+        }
+        
+        // Get matches based on criteria
+        const potentialMatches = getMatches(userCriteria);
+        setMatches(potentialMatches);
+        
+        // Redirect to paywall if already out of swipes
+        if (swipesLeft <= 0 && !isPro) {
+          setLocation('/paywall');
+          return;
+        }
+        
+        setLoading(false);
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to initialize matches",
+          variant: "destructive"
+        });
+        setLoading(false);
+      }
     }
     
-    // Get matches based on criteria
-    const potentialMatches = getMatches(userCriteria);
-    setMatches(potentialMatches);
-    
-    // Redirect to paywall if already out of swipes
-    if (swipesLeft <= 0) {
-      setLocation('/paywall');
-      return;
-    }
-    
-    setLoading(false);
-  }, [setLocation, resetMidnight, swipesLeft]);
+    initializeScreen();
+  }, [setLocation, resetMidnight, swipesLeft, isPro, toast]);
   
   // Handle swiping left (dislike)
   const handleSwipeLeft = (profileId: string) => {

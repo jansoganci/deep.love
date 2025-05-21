@@ -3,11 +3,15 @@ import { useTranslation } from 'react-i18next';
 import { useLocation } from 'wouter';
 import { UserProfile } from '../types';
 import { saveUserProfile } from '../services/storage';
+import { supabase, uploadAvatar } from '../services/supabase';
+import { useToast } from '../hooks/use-toast';
 
 const OnboardingScreen = () => {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
@@ -36,39 +40,94 @@ const OnboardingScreen = () => {
   };
   
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Basic validation
     if (!name.trim() || !age.trim() || !bio.trim()) {
-      alert('Please fill out all fields');
+      toast({
+        title: "Error",
+        description: "Please fill out all fields",
+        variant: "destructive"
+      });
       return;
     }
     
     const ageNum = parseInt(age, 10);
     if (isNaN(ageNum) || ageNum < 18 || ageNum > 100) {
-      alert('Please enter a valid age between 18 and 100');
+      toast({
+        title: "Error",
+        description: "Please enter a valid age between 18 and 100",
+        variant: "destructive"
+      });
       return;
     }
     
-    if (!photoPreview) {
-      alert('Please upload a profile photo');
+    if (!photoPreview || !photoFile) {
+      toast({
+        title: "Error",
+        description: "Please upload a profile photo",
+        variant: "destructive"
+      });
       return;
     }
-    
-    // Create user profile
-    const userProfile: UserProfile = {
-      name: name.trim(),
-      age: ageNum,
-      bio: bio.trim(),
-      photo: photoPreview,
-    };
-    
-    // Save to local storage
-    saveUserProfile(userProfile);
-    
-    // Navigate to criteria screen
-    setLocation('/criteria');
+
+    try {
+      setIsSubmitting(true);
+      
+      // Get the current user from Supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "You need to be logged in to create a profile",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Upload avatar to Supabase storage
+      const avatarUrl = await uploadAvatar(photoFile, user.id);
+      
+      // Create user profile in Supabase
+      const { error } = await supabase.from('profiles').upsert({
+        id: user.id,
+        display_name: name.trim(),
+        avatar_url: avatarUrl
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Create user profile object for local storage
+      const userProfile: UserProfile = {
+        name: name.trim(),
+        age: ageNum,
+        bio: bio.trim(),
+        photo: photoPreview, // We'll keep using the data URL for local display
+      };
+      
+      // Save to local storage
+      saveUserProfile(userProfile);
+      
+      toast({
+        title: "Success",
+        description: "Profile created successfully"
+      });
+      
+      // Navigate to criteria screen
+      setLocation('/criteria');
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create profile",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
   return (
@@ -163,9 +222,18 @@ const OnboardingScreen = () => {
         
         <button 
           type="submit"
-          className="w-full bg-primary text-white py-3 rounded-lg hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition font-medium"
+          disabled={isSubmitting}
+          className="w-full bg-primary text-white py-3 rounded-lg hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {t('onboarding.continue')}
+          {isSubmitting ? (
+            <span className="flex items-center justify-center">
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              {t('common.loading')}
+            </span>
+          ) : t('onboarding.continue')}
         </button>
       </form>
     </div>
