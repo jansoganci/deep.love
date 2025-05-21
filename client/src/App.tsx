@@ -14,6 +14,7 @@ import Footer from "./components/Footer";
 import { ThemeProvider } from "./hooks/useTheme";
 import { EntitlementProvider } from "./hooks/useEntitlement";
 import { loadUserProfile, loadUserCriteria } from "./services/storage";
+import { initAnalytics } from "./services/analytics";
 
 function Router() {
   const [location, setLocation] = useLocation();
@@ -46,6 +47,11 @@ function Router() {
 }
 
 function App() {
+  // Initialize analytics when the app loads
+  useEffect(() => {
+    initAnalytics();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>

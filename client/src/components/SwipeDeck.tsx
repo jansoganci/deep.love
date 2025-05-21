@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Profile } from '../types';
+import { track } from '../services/analytics';
 
 interface SwipeDeckProps {
   profiles: Profile[];
@@ -94,6 +95,21 @@ const SwipeDeck = ({ profiles, onSwipeLeft, onSwipeRight, onEmpty }: SwipeDeckPr
         // Swipe right - complete animation and trigger callback
         card.classList.add('swiped-right');
         setTimeout(() => {
+          // Track the swipe right event
+          track('swipe', { 
+            direction: 'right', 
+            profileId: profiles[currentIndex].id,
+            matchPercentage: profiles[currentIndex].matchPercentage
+          });
+            
+          // Track match event if percentage is high
+          if (profiles[currentIndex].matchPercentage > 80) {
+            track('match', { 
+              profileId: profiles[currentIndex].id,
+              matchPercentage: profiles[currentIndex].matchPercentage 
+            });
+          }
+          
           onSwipeRight(profiles[currentIndex].id);
           setCurrentIndex(prevIndex => prevIndex + 1);
         }, 300);
@@ -101,6 +117,13 @@ const SwipeDeck = ({ profiles, onSwipeLeft, onSwipeRight, onEmpty }: SwipeDeckPr
         // Swipe left - complete animation and trigger callback
         card.classList.add('swiped-left');
         setTimeout(() => {
+          // Track the swipe left event
+          track('swipe', { 
+            direction: 'left', 
+            profileId: profiles[currentIndex].id,
+            matchPercentage: profiles[currentIndex].matchPercentage
+          });
+          
           onSwipeLeft(profiles[currentIndex].id);
           setCurrentIndex(prevIndex => prevIndex + 1);
         }, 300);
