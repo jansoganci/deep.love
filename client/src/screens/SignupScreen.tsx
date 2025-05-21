@@ -47,7 +47,7 @@ const SignupScreen = () => {
     
     try {
       setIsSubmitting(true);
-      const { error } = await signUp(email, password);
+      const { error, data } = await signUp(email, password);
       
       if (error) {
         throw error;
@@ -58,8 +58,15 @@ const SignupScreen = () => {
         description: t('auth.successSignup'),
       });
       
-      // After signup, redirect to onboarding
+      // For new signups, always redirect to onboarding since they won't have a profile
       setLocation('/onboarding');
+      
+      // Note: Some Supabase configurations require email verification before a user 
+      // is fully registered. In those cases we might want to show a "please verify email" screen
+      // instead of immediately redirecting to onboarding.
+      // if (data?.user?.identities && data.user.identities.length === 0) {
+      //   setLocation('/verify-email');
+      // }
     } catch (error: any) {
       toast({
         title: t('auth.error'),

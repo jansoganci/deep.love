@@ -90,11 +90,15 @@ const OnboardingScreen = () => {
       // Upload avatar to Supabase storage
       const avatarUrl = await uploadAvatar(photoFile, user.id);
       
-      // Create user profile in Supabase
+      // Create user profile in Supabase with additional fields
       const { error } = await supabase.from('profiles').upsert({
         id: user.id,
         display_name: name.trim(),
-        avatar_url: avatarUrl
+        avatar_url: avatarUrl,
+        age: ageNum,
+        bio: bio.trim(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       });
       
       if (error) {
@@ -109,7 +113,7 @@ const OnboardingScreen = () => {
         photo: photoPreview, // We'll keep using the data URL for local display
       };
       
-      // Save to local storage
+      // Save to local storage for client-side access
       saveUserProfile(userProfile);
       
       toast({
@@ -117,7 +121,7 @@ const OnboardingScreen = () => {
         description: "Profile created successfully"
       });
       
-      // Navigate to criteria screen
+      // Always navigate to criteria screen after successful onboarding
       setLocation('/criteria');
     } catch (error: any) {
       toast({
