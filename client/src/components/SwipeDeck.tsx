@@ -146,12 +146,37 @@ const SwipeDeck = ({ profiles, onSwipeLeft, onSwipeRight, onEmpty }: SwipeDeckPr
       if (direction === 'left') {
         card.classList.add('swiped-left');
         setTimeout(() => {
+          // Track button swipe left
+          track('swipe', { 
+            direction: 'left', 
+            method: 'button',
+            profileId: profiles[currentIndex].id,
+            matchPercentage: profiles[currentIndex].matchPercentage
+          });
+          
           onSwipeLeft(profiles[currentIndex].id);
           setCurrentIndex(prevIndex => prevIndex + 1);
         }, 300);
       } else {
         card.classList.add('swiped-right');
         setTimeout(() => {
+          // Track button swipe right
+          track('swipe', { 
+            direction: 'right', 
+            method: 'button',
+            profileId: profiles[currentIndex].id,
+            matchPercentage: profiles[currentIndex].matchPercentage
+          });
+          
+          // Track match event if percentage is high
+          if (profiles[currentIndex].matchPercentage > 80) {
+            track('match', { 
+              profileId: profiles[currentIndex].id,
+              matchPercentage: profiles[currentIndex].matchPercentage,
+              method: 'button'
+            });
+          }
+          
           onSwipeRight(profiles[currentIndex].id);
           setCurrentIndex(prevIndex => prevIndex + 1);
         }, 300);

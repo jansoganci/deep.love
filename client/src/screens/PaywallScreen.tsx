@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation } from 'wouter';
 import { useEntitlement } from '../hooks/useEntitlement';
 import BannerAdPlaceholder from '../components/BannerAdPlaceholder';
+import { track } from '../services/analytics';
 
 const PaywallScreen = () => {
   const { t } = useTranslation();
@@ -16,6 +17,14 @@ const PaywallScreen = () => {
   // Mock payment process and upgrade user to Pro
   const handleSubscribe = (plan: 'monthly' | 'yearly') => {
     console.log(`Subscribe to ${plan} plan`);
+    
+    // Track upgrade event
+    track('upgrade', {
+      plan: plan,
+      price: plan === 'monthly' ? 9.99 : 59.99,
+      currency: 'USD'
+    });
+    
     // Set user to Pro status and redirect to matches
     setIsPro(true);
     setLocation('/matches');
