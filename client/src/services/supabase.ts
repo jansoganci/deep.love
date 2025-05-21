@@ -8,20 +8,20 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
 });
 
 /**
- * Upload an image file to the `avatars` storage bucket and return its public URL.
+ * Upload an image file to the `avatars_bucket` storage bucket and return its public URL.
  */
 export async function uploadAvatar(
   file: File,
   userId: string,
 ): Promise<string> {
   const { data, error } = await supabase.storage
-    .from('avatars')
+    .from('avatars_bucket')
     .upload(`${userId}/${file.name}`, file, { upsert: true });
 
   if (error) throw error;
 
   const { data: publicUrlData } = supabase.storage
-    .from('avatars')
+    .from('avatars_bucket')
     .getPublicUrl(data.path);
 
   return publicUrlData.publicUrl;
