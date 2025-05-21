@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useLocation } from 'wouter';
 import SwipeDeck from '../components/SwipeDeck';
 import FreemiumBanner from '../components/FreemiumBanner';
+import BannerAdPlaceholder from '../components/BannerAdPlaceholder';
 import { getMatches } from '../services/matchEngine';
 import { loadUserCriteria } from '../services/storage';
 import { useSwipeLimit } from '../hooks/useSwipeLimit';
@@ -128,6 +129,9 @@ const MatchesScreen = () => {
           {t('matches.resetCriteria')}
         </button>
       </div>
+      
+      {/* Only show ads to non-Pro users */}
+      {!isPro && <BannerAdPlaceholder />}
     </div>
   );
 };

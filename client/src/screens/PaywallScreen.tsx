@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'wouter';
 import { useEntitlement } from '../hooks/useEntitlement';
+import BannerAdPlaceholder from '../components/BannerAdPlaceholder';
 
 const PaywallScreen = () => {
   const { t } = useTranslation();
@@ -173,6 +174,9 @@ const PaywallScreen = () => {
           </div>
         </div>
       </div>
+      
+      {/* Add banner ad at the bottom - only shown to free users */}
+      <BannerAdPlaceholder />
     </div>
   );
 };
