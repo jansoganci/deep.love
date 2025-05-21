@@ -1,0 +1,116 @@
+**Prompt for Replit AI Agent**
+
+---
+
+### Objective
+
+Integrate a Supabase client into the **Deep Love** project, expose two helper functions, and supply reference SQL for the required buckets/tables.
+
+---
+
+### Tasks
+
+1. **Install the SDK**
+
+   ```bash
+   npm install @supabase/supabase-js
+   ```
+
+2. **Create `src/services/supabase.ts`**
+
+   ```ts
+   import { createClient } from '@supabase/supabase-js';
+
+   const supabaseUrl  = process.env.SUPABASE_URL  as string;
+   const supabaseKey  = process.env.SUPABASE_ANON_KEY as string;
+
+   export const supabase = createClient(supabaseUrl, supabaseKey, {
+     auth: { persistSession: true },
+   });
+
+   /**
+    * Upload an image file to the `avatars` storage bucket and return its public URL.
+    */
+   export async function uploadAvatar(
+     file: File,
+     userId: string,
+   ): Promise<string> {
+     const { data, error } = await supabase.storage
+       .from('avatars')
+       .upload(`${userId}/${file.name}`, file, { upsert: true });
+
+     if (error) throw error;
+
+     const { publicURL } = supabase.storage
+       .from('avatars')
+       .getPublicUrl(data.path);
+
+     return publicURL;
+   }
+
+   /**
+    * Record a swipe action (`left` or `right`) between two users.
+    */
+   export async function recordSwipe(
+     fromId: string,
+     toId:   string,
+     direction: 'left' | 'right',
+   ): Promise<void> {
+     const { error } = await supabase.from('swipes').insert({
+       from_id:  fromId,
+       to_id:    toId,
+       direction,
+     });
+
+     if (error) throw error;
+   }
+   ```
+
+3. **Reference SQL for Supabase CLI (run only if the resources don’t already exist)**
+
+   ```sql
+   -- profiles table
+   create table profiles (
+     id uuid primary key references auth.users,
+     display_name text,
+     avatar_url  text
+   );
+
+   -- swipes table
+   create table swipes (
+     id bigint generated always as identity primary key,
+     from_id   uuid references auth.users,
+     to_id     uuid,
+     direction text,
+     created_at timestamptz default now()
+   );
+
+   -- matches view
+   create view matches as
+   select a.from_id as user_a,
+          a.to_id   as user_b,
+          a.created_at
+   from swipes a
+   join swipes b
+     on a.from_id = b.to_id
+    and a.to_id   = b.from_id
+    and a.direction = 'right'
+    and b.direction = 'right';
+   ```
+
+4. **Add `.env.example`**
+
+   ```bash
+   SUPABASE_URL=
+   SUPABASE_ANON_KEY=
+   ```
+
+   > *Only include placeholders—never commit real keys.*
+
+---
+
+### Constraints
+
+* **Do not** touch existing build or project config files—only add the new service file and its exports.
+* Ensure TypeScript types compile without errors.
+* Follow the project’s existing lint/format rules.
