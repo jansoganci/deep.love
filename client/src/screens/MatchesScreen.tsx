@@ -4,6 +4,7 @@ import { useLocation } from 'wouter';
 import SwipeDeck from '../components/SwipeDeck';
 import FreemiumBanner from '../components/FreemiumBanner';
 import BannerAdPlaceholder from '../components/BannerAdPlaceholder';
+import GenerateFakeProfiles from '../components/GenerateFakeProfiles';
 import { getMatches } from '../services/matchEngine';
 import { loadUserCriteria, loadUserProfile } from '../services/storage';
 import { useSwipeLimit } from '../hooks/useSwipeLimit';
@@ -43,16 +44,30 @@ const MatchesScreen = () => {
         // Try to get the authenticated user from Supabase
         const { data: { user } } = await supabase.auth.getUser();
         
-        // If we have a user, set it in state
-        if (user) {
-          setCurrentUser({ id: user.id });
-        } else {
-          // For testing purposes, we'll create a mock user ID if not authenticated
-          setCurrentUser({ id: 'test-user-id-123' });
+        // Must have authenticated user to continue
+        if (!user) {
+          toast({
+            title: "Authentication Required",
+            description: "You need to be logged in to view matches",
+            variant: "destructive"
+          });
+          setLocation('/login');
+          return;
         }
         
-        // Get matches based on criteria
-        const potentialMatches = getMatches(userCriteria);
+        setCurrentUser({ id: user.id });
+        console.log("Current user ID:", user.id);
+        
+        // Get matches based on criteria from Supabase
+        const potentialMatches = await getMatches(userCriteria);
+        
+        if (potentialMatches.length === 0) {
+          toast({
+            title: "No Matches Found",
+            description: "Try broadening your criteria or check back later for more profiles",
+          });
+        }
+        
         setMatches(potentialMatches);
         
         // Redirect to paywall if already out of swipes
@@ -290,6 +305,9 @@ const MatchesScreen = () => {
           </div>
         </div>
       )}
+      
+      {/* Generator button for development/testing */}
+      <GenerateFakeProfiles />
     </div>
   );
 };
