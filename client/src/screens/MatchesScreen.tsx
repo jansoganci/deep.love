@@ -3,20 +3,22 @@ import { useTranslation } from 'react-i18next';
 import { useLocation } from 'wouter';
 import SwipeDeck from '../components/SwipeDeck';
 import { getMatches } from '../services/matchEngine';
-import { loadUserCriteria, getSwipeCount, updateSwipeCount } from '../services/storage';
+import { loadUserCriteria } from '../services/storage';
+import { useSwipeLimit } from '../hooks/useSwipeLimit';
 import { Profile } from '../types';
-
-const MAX_DAILY_SWIPES = 20;
 
 const MatchesScreen = () => {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const [matches, setMatches] = useState<Profile[]>([]);
-  const [swipesRemaining, setSwipesRemaining] = useState(MAX_DAILY_SWIPES);
+  const { swipesLeft, registerSwipe, resetMidnight } = useSwipeLimit();
   const [loading, setLoading] = useState(true);
   
-  // Load matches and swipe count on mount
+  // Load matches and check swipe limit on mount
   useEffect(() => {
+    // Reset swipes if it's a new day
+    resetMidnight();
+    
     const userCriteria = loadUserCriteria();
     
     if (!userCriteria) {
@@ -29,33 +31,33 @@ const MatchesScreen = () => {
     const potentialMatches = getMatches(userCriteria);
     setMatches(potentialMatches);
     
-    // Get remaining swipes from storage
-    const usedSwipes = getSwipeCount();
-    setSwipesRemaining(MAX_DAILY_SWIPES - usedSwipes);
+    // Redirect to paywall if already out of swipes
+    if (swipesLeft <= 0) {
+      setLocation('/paywall');
+      return;
+    }
     
     setLoading(false);
-  }, [setLocation]);
+  }, [setLocation, resetMidnight, swipesLeft]);
   
   // Handle swiping left (dislike)
   const handleSwipeLeft = (profileId: string) => {
-    const newSwipesRemaining = swipesRemaining - 1;
-    setSwipesRemaining(newSwipesRemaining);
-    updateSwipeCount();
+    // Register the swipe action
+    registerSwipe();
     
     // Navigate to paywall if no swipes remaining
-    if (newSwipesRemaining <= 0) {
+    if (swipesLeft <= 0) {
       setLocation('/paywall');
     }
   };
   
   // Handle swiping right (like)
   const handleSwipeRight = (profileId: string) => {
-    const newSwipesRemaining = swipesRemaining - 1;
-    setSwipesRemaining(newSwipesRemaining);
-    updateSwipeCount();
+    // Register the swipe action
+    registerSwipe();
     
     // Navigate to paywall if no swipes remaining
-    if (newSwipesRemaining <= 0) {
+    if (swipesLeft <= 0) {
       setLocation('/paywall');
     }
   };
@@ -84,7 +86,7 @@ const MatchesScreen = () => {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-center">{t('matches.title')}</h1>
         <p className="text-center text-gray-500 dark:text-gray-400 mt-2">
-          {t('matches.remaining', { remaining: swipesRemaining })}
+          {t('matches.remaining', { remaining: swipesLeft })}
         </p>
       </div>
       
