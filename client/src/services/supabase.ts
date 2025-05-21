@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
@@ -9,55 +9,41 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
 
 /**
  * Upload an image file to the storage bucket and return its public URL.
- * Note: The bucket name must match exactly what's in your Supabase dashboard.
  */
 export async function uploadAvatar(
   file: File,
   userId: string,
 ): Promise<string> {
-  // First, let's try to list all available buckets to debug
+  const bucketName = "avatars";
+
+  // Kullanıcı gerçekten login mi kontrol et
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+
+  if (userError || !userData?.user) {
+    console.error("Kullanıcı login değil");
+    throw new Error("You must be logged in to upload an avatar.");
+  }
+
   try {
-    console.log('Attempting to upload to storage...');
-    
-    // Check which buckets are available
-    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
-    
-    if (listError) {
-      console.error('Error listing buckets:', listError);
-      throw new Error(`Could not list buckets: ${listError.message}`);
-    }
-    
-    console.log('Available buckets:', buckets?.map(b => b.name));
-    
-    // If no buckets are available, throw a more specific error
-    if (!buckets || buckets.length === 0) {
-      throw new Error('No storage buckets found. Please create a bucket in your Supabase dashboard.');
-    }
-    
-    // Use the exact bucket name "avatars" that you created in Supabase
-    const bucketName = 'avatars';
-    console.log(`Using bucket: ${bucketName}`);
-    
-    // Attempt the upload
+    console.log("Uploading to:", bucketName);
+
     const { data, error } = await supabase.storage
       .from(bucketName)
       .upload(`${userId}/${file.name}`, file, { upsert: true });
 
     if (error) {
-      console.error('Upload error:', error);
+      console.error("Upload error:", error);
       throw error;
     }
 
-    // Get the public URL
     const { data: publicUrlData } = supabase.storage
       .from(bucketName)
       .getPublicUrl(data.path);
-      
-    console.log('Upload successful!');
+
+    console.log("Upload successful!");
     return publicUrlData.publicUrl;
-    
   } catch (error) {
-    console.error('Upload avatar error:', error);
+    console.error("Upload avatar error:", error);
     throw error;
   }
 }
@@ -68,9 +54,9 @@ export async function uploadAvatar(
 export async function recordSwipe(
   fromId: string,
   toId: string,
-  direction: 'left' | 'right',
+  direction: "left" | "right",
 ): Promise<void> {
-  const { error } = await supabase.from('swipes').insert({
+  const { error } = await supabase.from("swipes").insert({
     from_id: fromId,
     to_id: toId,
     direction,

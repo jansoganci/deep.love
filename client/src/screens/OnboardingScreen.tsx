@@ -121,8 +121,12 @@ const OnboardingScreen = () => {
         description: "Profile created successfully"
       });
       
-      // Always navigate to criteria screen after successful onboarding
-      setLocation('/criteria');
+      // Ensure navigation happens after state updates are processed
+      // Using setTimeout to push this to the next event loop tick
+      setTimeout(() => {
+        console.log('Redirecting to criteria page...');
+        setLocation('/criteria');
+      }, 100);
     } catch (error: any) {
       toast({
         title: "Error",
