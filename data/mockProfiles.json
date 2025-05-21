@@ -1,0 +1,82 @@
+[
+  {
+    "id": "1",
+    "name": "Sophia",
+    "age": 28,
+    "occupation": "Photographer & Traveler",
+    "bio": "Loves exploring new places, taking photos of everything beautiful, and finding hidden coffee shops.",
+    "photo": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&h=500",
+    "interests": ["Travel", "Photography", "Coffee"],
+    "relationshipGoal": "longTerm"
+  },
+  {
+    "id": "2",
+    "name": "Ethan",
+    "age": 32,
+    "occupation": "Software Engineer",
+    "bio": "Passionate about technology, hiking on weekends, and trying new craft beers. Looking for someone to share adventures with.",
+    "photo": "https://images.unsplash.com/photo-1600486913747-55e5470d6f40?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&h=500",
+    "interests": ["Hiking", "Technology", "Craft Beer"],
+    "relationshipGoal": "longTerm"
+  },
+  {
+    "id": "3",
+    "name": "Olivia",
+    "age": 26,
+    "occupation": "Yoga Instructor",
+    "bio": "Mindfulness enthusiast who loves nature, healthy cooking, and deep conversations. Seeking genuine connection.",
+    "photo": "https://images.unsplash.com/photo-1534751516642-a1af1ef26a56?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&h=500",
+    "interests": ["Yoga", "Cooking", "Mindfulness"],
+    "relationshipGoal": "longTerm"
+  },
+  {
+    "id": "4",
+    "name": "Lucas",
+    "age": 30,
+    "occupation": "Musician & Teacher",
+    "bio": "Guitar player, music lover, and part-time teacher. Enjoys outdoor concerts and weekend road trips.",
+    "photo": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&h=500",
+    "interests": ["Music", "Travel", "Movies"],
+    "relationshipGoal": "casual"
+  },
+  {
+    "id": "5",
+    "name": "Emma",
+    "age": 27,
+    "occupation": "Graphic Designer",
+    "bio": "Creative soul with a passion for design, art museums, and trying new restaurants. Looking for someone who appreciates creativity.",
+    "photo": "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&h=500",
+    "interests": ["Art", "Design", "Food"],
+    "relationshipGoal": "longTerm"
+  },
+  {
+    "id": "6",
+    "name": "Aiden",
+    "age": 29,
+    "occupation": "Marketing Consultant",
+    "bio": "Sports enthusiast, avid reader, and coffee addict. Enjoys staying active and discovering new podcasts.",
+    "photo": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&h=500",
+    "interests": ["Sports", "Reading", "Coffee"],
+    "relationshipGoal": "casual"
+  },
+  {
+    "id": "7",
+    "name": "Madison",
+    "age": 25,
+    "occupation": "Environmental Scientist",
+    "bio": "Nature lover, hiker, and advocate for sustainable living. Looking for someone who shares my passion for the environment.",
+    "photo": "https://images.unsplash.com/photo-1524250502761-1ac6f2e30d43?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&h=500",
+    "interests": ["Hiking", "Sustainability", "Travel"],
+    "relationshipGoal": "marriage"
+  },
+  {
+    "id": "8",
+    "name": "Noah",
+    "age": 31,
+    "occupation": "Chef",
+    "bio": "Culinary artist who loves experimenting with flavors, collecting vinyl records, and exploring food markets around the world.",
+    "photo": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&h=500",
+    "interests": ["Cooking", "Music", "Travel"],
+    "relationshipGoal": "longTerm"
+  }
+]

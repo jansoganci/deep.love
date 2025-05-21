@@ -1,0 +1,58 @@
+{
+  "appName": "Deep Love",
+  "header": {
+    "currentLanguage": "English"
+  },
+  "footer": {
+    "tagline": "Find your perfect match with AI",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "contact": "Contact",
+    "copyright": "© 2023 Deep Love. All rights reserved."
+  },
+  "onboarding": {
+    "title": "Create Your Profile",
+    "uploadPhoto": "Upload Photo",
+    "nameLabel": "Name",
+    "namePlaceholder": "Your name",
+    "ageLabel": "Age",
+    "agePlaceholder": "Your age",
+    "bioLabel": "About Me",
+    "bioPlaceholder": "Tell us a bit about yourself...",
+    "continue": "Continue"
+  },
+  "criteria": {
+    "title": "What Are You Looking For?",
+    "ageRangeLabel": "Age Range",
+    "hobbiesLabel": "Hobbies & Interests",
+    "goalsLabel": "Relationship Goals",
+    "findMatches": "Find Matches",
+    "goals": {
+      "casual": "Casual Dating",
+      "longTerm": "Long-term Relationship",
+      "marriage": "Marriage",
+      "friendship": "Friendship"
+    }
+  },
+  "matches": {
+    "title": "Your Matches",
+    "remaining": "Swipes remaining today: {{remaining}}/20",
+    "resetCriteria": "Change My Preferences",
+    "noMatches": "No more matches found based on your criteria.",
+    "match": "{{percentage}}% Match"
+  },
+  "paywall": {
+    "title": "Upgrade to Deep Love Pro",
+    "description": "You've used all your free swipes for today. Upgrade to continue matching with potential partners.",
+    "monthlyPlan": "Monthly",
+    "yearlyPlan": "Yearly",
+    "bestValue": "Best Value",
+    "feature1": "Unlimited swipes",
+    "feature2": "See who likes you",
+    "feature3": "Ad-free experience",
+    "feature4": "Priority matching",
+    "subscribe": "Subscribe",
+    "continueFree": "Continue with limited swipes",
+    "testimonialsTitle": "What Our Users Say"
+  }
+}
