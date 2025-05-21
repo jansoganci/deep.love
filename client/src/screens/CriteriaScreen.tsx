@@ -80,7 +80,8 @@ const CriteriaScreen = () => {
   
   return (
     <div className="max-w-md mx-auto">
-      <h1 className="text-3xl font-bold text-center mb-8">{t('criteria.title')}</h1>
+      <h1 className="text-3xl font-bold text-center mb-2">{t('criteria.title')}</h1>
+      <p className="text-center text-gray-500 dark:text-gray-400 mb-8">{t('criteria.subtitle')}</p>
       
       <form className="space-y-8" onSubmit={handleSubmit}>
         {/* Age Range Slider */}
