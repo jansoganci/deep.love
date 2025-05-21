@@ -12,6 +12,7 @@ import PaywallScreen from "./screens/PaywallScreen";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { ThemeProvider } from "./hooks/useTheme";
+import { EntitlementProvider } from "./hooks/useEntitlement";
 import { loadUserProfile, loadUserCriteria } from "./services/storage";
 
 function Router() {
@@ -48,18 +49,20 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <TooltipProvider>
-          <div className="min-h-screen flex flex-col">
-            <Header />
-            <main className="flex-1">
-              <div className="max-w-5xl mx-auto px-4 py-6">
-                <Router />
-              </div>
-            </main>
-            <Footer />
-            <Toaster />
-          </div>
-        </TooltipProvider>
+        <EntitlementProvider>
+          <TooltipProvider>
+            <div className="min-h-screen flex flex-col">
+              <Header />
+              <main className="flex-1">
+                <div className="max-w-5xl mx-auto px-4 py-6">
+                  <Router />
+                </div>
+              </main>
+              <Footer />
+              <Toaster />
+            </div>
+          </TooltipProvider>
+        </EntitlementProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
