@@ -4,7 +4,7 @@ import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import OnboardingScreen from "./screens/OnboardingScreen";
 import CriteriaScreen from "./screens/CriteriaScreen";
 import MatchesScreen from "./screens/MatchesScreen";
@@ -16,35 +16,20 @@ import Footer from "./components/Footer";
 import PrivateRoute from "./components/PrivateRoute";
 import { ThemeProvider } from "./hooks/useTheme";
 import { EntitlementProvider } from "./hooks/useEntitlement";
-import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { AuthProvider } from "./contexts/AuthContext";
 import { loadUserProfile, loadUserCriteria } from "./services/storage";
 import { initAnalytics } from "./services/analytics";
 
-function Router() {
+const AppRoutes = () => {
   const [location, setLocation] = useLocation();
-  const { user, loading } = useAuth();
-  const userProfile = loadUserProfile();
-  const userCriteria = loadUserCriteria();
-
-  // Set initial route based on authentication and user progress
+  
+  // This initial redirect is just to handle the root path
   useEffect(() => {
-    if (location === "/" && !loading) {
-      if (!user) {
-        // Not authenticated - go to login
-        setLocation("/login");
-      } else if (!userProfile) {
-        // Authenticated but no profile - go to onboarding
-        setLocation("/onboarding");
-      } else if (!userCriteria) {
-        // Profile but no criteria - go to criteria selection
-        setLocation("/criteria");
-      } else {
-        // Has everything - go to matches
-        setLocation("/matches");
-      }
+    if (location === "/") {
+      setLocation("/login");
     }
-  }, [location, setLocation, user, userProfile, userCriteria, loading]);
-
+  }, [location, setLocation]);
+  
   return (
     <Switch>
       {/* Public routes */}
@@ -95,7 +80,7 @@ function App() {
                 <Header />
                 <main className="flex-1">
                   <div className="max-w-5xl mx-auto px-4 py-6">
-                    <Router />
+                    <AppRoutes />
                   </div>
                 </main>
                 <Footer />
