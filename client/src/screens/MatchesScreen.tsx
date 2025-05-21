@@ -75,38 +75,108 @@ const MatchesScreen = () => {
     initializeScreen();
   }, [setLocation, resetMidnight, swipesLeft, isPro, toast]);
   
+  // Function to show the match modal
+  const showMatchPopup = (profile: Profile) => {
+    setMatchedProfile(profile);
+    setShowMatchModal(true);
+  };
+
   // Handle swiping left (dislike)
-  const handleSwipeLeft = (profileId: string) => {
-    // Pro users have unlimited swipes, only count for free users
-    if (!isPro) {
-      // Register the swipe action
-      registerSwipe();
-      
-      // Navigate to paywall if no swipes remaining
-      if (swipesLeft <= 1) { // Check if this swipe will deplete remaining swipes
-        setLocation('/paywall');
-      }
+  const handleSwipeLeft = async (profileId: string) => {
+    if (!currentUser) {
+      toast({
+        title: "Error",
+        description: "User not initialized",
+        variant: "destructive"
+      });
+      return;
     }
     
-    // Remove the profile from the deck
-    setMatches(prev => prev.filter(p => p.id !== profileId));
+    try {
+      // Record the swipe in Supabase
+      await recordSwipe(currentUser.id, profileId, 'left');
+      
+      // Pro users have unlimited swipes, only count for free users
+      if (!isPro) {
+        // Register the swipe action for the limit counter
+        registerSwipe();
+        
+        // Navigate to paywall if no swipes remaining
+        if (swipesLeft <= 1) { // Check if this swipe will deplete remaining swipes
+          setLocation('/paywall');
+        }
+      }
+      
+      // Remove the profile from the deck
+      setMatches(prev => prev.filter(p => p.id !== profileId));
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to record swipe",
+        variant: "destructive"
+      });
+    }
   };
   
   // Handle swiping right (like)
-  const handleSwipeRight = (profileId: string) => {
-    // Pro users have unlimited swipes, only count for free users
-    if (!isPro) {
-      // Register the swipe action
-      registerSwipe();
-      
-      // Navigate to paywall if no swipes remaining
-      if (swipesLeft <= 1) { // Check if this swipe will deplete remaining swipes
-        setLocation('/paywall');
-      }
+  const handleSwipeRight = async (profileId: string) => {
+    if (!currentUser) {
+      toast({
+        title: "Error",
+        description: "User not initialized",
+        variant: "destructive"
+      });
+      return;
     }
     
-    // Remove the profile from the deck
-    setMatches(prev => prev.filter(p => p.id !== profileId));
+    try {
+      // Find the profile that was swiped on
+      const candidate = matches.find(m => m.id === profileId);
+      if (!candidate) {
+        throw new Error("Profile not found");
+      }
+      
+      // Record the swipe in Supabase
+      await recordSwipe(currentUser.id, profileId, 'right');
+      
+      // Check if this is a mutual match
+      const { data: reciprocal, error } = await supabase
+        .from('swipes')
+        .select('*')
+        .eq('from_id', profileId)
+        .eq('to_id', currentUser.id)
+        .eq('direction', 'right')
+        .single();
+      
+      if (error && error.code !== 'PGRST116') { // PGRST116 means no results found
+        throw error;
+      }
+      
+      // If there's a reciprocal swipe (mutual match), show the match modal
+      if (reciprocal) {
+        showMatchPopup(candidate);
+      }
+      
+      // Pro users have unlimited swipes, only count for free users
+      if (!isPro) {
+        // Register the swipe action for the limit counter
+        registerSwipe();
+        
+        // Navigate to paywall if no swipes remaining
+        if (swipesLeft <= 1) { // Check if this swipe will deplete remaining swipes
+          setLocation('/paywall');
+        }
+      }
+      
+      // Remove the profile from the deck
+      setMatches(prev => prev.filter(p => p.id !== profileId));
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to record swipe",
+        variant: "destructive"
+      });
+    }
   };
   
   // Reset criteria and navigate back
@@ -163,6 +233,63 @@ const MatchesScreen = () => {
       
       {/* Only show ads to non-Pro users */}
       {!isPro && <BannerAdPlaceholder />}
+      
+      {/* Match Modal */}
+      {showMatchModal && matchedProfile && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full text-center shadow-xl">
+            <h2 className="text-2xl font-bold mb-4 text-primary">It's a Match!</h2>
+            <p className="mb-6">You and {matchedProfile.name} liked each other</p>
+            
+            <div className="flex items-center justify-center space-x-4 mb-6">
+              {/* User Avatar */}
+              <div className="w-24 h-24 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+                <img 
+                  src="https://placehold.co/100x100/png?text=You" 
+                  alt="Your profile" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              
+              {/* Hearts Icon */}
+              <div className="text-3xl text-red-500">
+                ❤️
+              </div>
+              
+              {/* Match Avatar */}
+              <div className="w-24 h-24 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+                <img 
+                  src={matchedProfile.photo} 
+                  alt={matchedProfile.name} 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+            
+            <div className="flex flex-col space-y-4">
+              <button 
+                className="w-full py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition"
+                onClick={() => {
+                  // In a real app, this would open a chat with the matched user
+                  toast({
+                    title: "Feature Coming Soon",
+                    description: "Chat functionality will be available in the next update"
+                  });
+                }}
+              >
+                Send a Message
+              </button>
+              
+              <button 
+                className="w-full py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                onClick={() => setShowMatchModal(false)}
+              >
+                Keep Swiping
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
