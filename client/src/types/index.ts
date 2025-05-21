@@ -31,6 +31,10 @@ export interface Profile {
   interests: string[];
   relationshipGoal: string;
   matchPercentage: number; // Added by matchEngine
+  gender?: string; // 'male' or 'female'
+  religion?: string; // Religion preference
+  ethnicity?: string; // Ethnicity information
+  height?: number; // Height in cm
 }
 
 // Swipe action
