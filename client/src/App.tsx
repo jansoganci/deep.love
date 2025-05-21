@@ -16,7 +16,7 @@ import Footer from "./components/Footer";
 import PrivateRoute from "./components/PrivateRoute";
 import { ThemeProvider } from "./hooks/useTheme";
 import { EntitlementProvider } from "./hooks/useEntitlement";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { loadUserProfile, loadUserCriteria } from "./services/storage";
 import { initAnalytics } from "./services/analytics";
 
