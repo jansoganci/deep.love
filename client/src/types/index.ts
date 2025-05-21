@@ -11,6 +11,13 @@ export interface UserCriteria {
   ageRange: [number, number]; // [min, max]
   hobbies: string[];
   relationshipGoal: string;
+  genderPreference: string;  // 'any', 'male', 'female'
+  distanceRadius: number;    // in kilometers
+  education?: string;        // optional education level/background
+  occupation?: string;       // optional job information
+  religion: string;          // religious preference
+  ethnicity: string;         // ethnicity preference
+  height?: number;           // optional height in cm
 }
 
 // Profile data structure (for matches)

@@ -1,149 +1,173 @@
-import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { useLocation } from 'wouter';
-import { UserCriteria } from '../types';
-import { saveUserCriteria } from '../services/storage';
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useLocation } from "wouter";
+import { UserCriteria } from "../types";
+import { saveUserCriteria } from "../services/storage";
 
-// List of available hobbies
 const HOBBIES = [
-  'Cooking', 'Travel', 'Photography', 'Music', 'Sports',
-  'Reading', 'Movies', 'Hiking', 'Gaming', 'Art'
+  "Cooking",
+  "Travel",
+  "Photography",
+  "Music",
+  "Sports",
+  "Reading",
+  "Movies",
+  "Hiking",
+  "Gaming",
+  "Art",
 ];
 
-// Relationship goals
-const GOALS = [
-  'casual', 'longTerm', 'marriage', 'friendship'
-];
+const GOALS = ["casual", "longTerm", "marriage", "friendship"];
 
 const CriteriaScreen = () => {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
-  
+
   const [ageRange, setAgeRange] = useState<[number, number]>([18, 40]);
   const [selectedHobbies, setSelectedHobbies] = useState<string[]>([]);
   const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
-  
-  // Update age range (min)
+  const [genderPreference, setGenderPreference] = useState<string>("any");
+  const [distanceRadius, setDistanceRadius] = useState<number>(50);
+  const [education, setEducation] = useState<string>("");
+  const [occupation, setOccupation] = useState<string>("");
+  const [religion, setReligion] = useState<string>("none");
+  const [ethnicity, setEthnicity] = useState<string>("none");
+  const [height, setHeight] = useState<string>("");
+
   const handleMinAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const minAge = parseInt(e.target.value, 10);
     setAgeRange([minAge, Math.max(minAge, ageRange[1])]);
   };
-  
-  // Update age range (max)
+
   const handleMaxAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const maxAge = parseInt(e.target.value, 10);
     setAgeRange([Math.min(ageRange[0], maxAge), maxAge]);
   };
-  
-  // Toggle hobby selection
+
   const toggleHobby = (hobby: string) => {
     if (selectedHobbies.includes(hobby)) {
-      setSelectedHobbies(selectedHobbies.filter(h => h !== hobby));
+      setSelectedHobbies(selectedHobbies.filter((h) => h !== hobby));
     } else {
       setSelectedHobbies([...selectedHobbies, hobby]);
     }
   };
-  
-  // Handle relationship goal selection
+
   const selectGoal = (goal: string) => {
     setSelectedGoal(goal);
   };
-  
-  // Submit criteria
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Basic validation
+
     if (selectedHobbies.length === 0) {
-      alert('Please select at least one hobby');
+      alert("Please select at least one hobby");
       return;
     }
-    
+
     if (!selectedGoal) {
-      alert('Please select a relationship goal');
+      alert("Please select a relationship goal");
       return;
     }
-    
-    // Create user criteria
+
     const userCriteria: UserCriteria = {
       ageRange,
       hobbies: selectedHobbies,
       relationshipGoal: selectedGoal,
+      genderPreference,
+      distanceRadius,
+      education,
+      occupation,
+      religion,
+      ethnicity,
+      height: height ? parseInt(height, 10) : undefined,
     };
-    
-    // Save to local storage
+
     saveUserCriteria(userCriteria);
-    
-    // Navigate to matches screen
-    setLocation('/matches');
+    setLocation("/matches");
   };
-  
+
   return (
     <div className="max-w-md mx-auto">
-      <h1 className="text-3xl font-bold text-center mb-2">{t('criteria.title')}</h1>
-      <p className="text-center text-gray-500 dark:text-gray-400 mb-8">{t('criteria.subtitle')}</p>
-      
-      <form className="space-y-8" onSubmit={handleSubmit}>
-        {/* Age Range Slider */}
+      <h1 className="text-3xl font-bold text-center mb-2">
+        {t("criteria.title")}
+      </h1>
+      <p className="text-center text-gray-500 dark:text-gray-400 mb-8">
+        {t("criteria.subtitle")}
+      </p>
+
+      <form className="space-y-6" onSubmit={handleSubmit}>
+        {/* Gender Preference */}
         <div>
-          <label className="block text-sm font-medium mb-3">{t('criteria.ageRangeLabel')}</label>
+          <label className="block text-sm font-medium mb-1">
+            Gender Preference
+          </label>
+          <select
+            value={genderPreference}
+            onChange={(e) => setGenderPreference(e.target.value)}
+            className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 dark:bg-gray-800"
+          >
+            <option value="any">Any</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </div>
+
+        {/* Age Range */}
+        <div>
+          <label className="block text-sm font-medium mb-3">Age Range</label>
           <div className="mb-2">
-            <span className="text-sm font-medium">{ageRange[0]} - {ageRange[1]}</span>
+            <span className="text-sm font-medium">
+              {ageRange[0]} - {ageRange[1]}
+            </span>
           </div>
-          <div className="relative pt-1">
-            <input 
-              type="range" 
-              min="18" 
-              max="100" 
-              value={ageRange[0]} 
-              onChange={handleMinAgeChange}
-              className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer" 
-            />
-            <input 
-              type="range" 
-              min="18" 
-              max="100" 
-              value={ageRange[1]} 
-              onChange={handleMaxAgeChange}
-              className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer mt-4" 
-            />
-          </div>
+          <input
+            type="range"
+            min="18"
+            max="100"
+            value={ageRange[0]}
+            onChange={handleMinAgeChange}
+            className="w-full mb-2"
+          />
+          <input
+            type="range"
+            min="18"
+            max="100"
+            value={ageRange[1]}
+            onChange={handleMaxAgeChange}
+            className="w-full"
+          />
         </div>
-        
-        {/* Hobbies/Interests Multi-select */}
+
+        {/* Distance Radius */}
         <div>
-          <label className="block text-sm font-medium mb-3">{t('criteria.hobbiesLabel')}</label>
-          <div className="flex flex-wrap gap-2">
-            {HOBBIES.map(hobby => (
-              <button 
-                key={hobby}
-                type="button" 
-                className={`px-3 py-1 rounded-full text-sm ${
-                  selectedHobbies.includes(hobby) 
-                    ? 'bg-primary text-white border border-primary hover:bg-primary-dark' 
-                    : 'border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
-                } focus:outline-none focus:ring-2 focus:ring-primary`}
-                onClick={() => toggleHobby(hobby)}
-              >
-                {hobby}
-              </button>
-            ))}
-          </div>
+          <label className="block text-sm font-medium mb-1">
+            Distance Radius (km): {distanceRadius}
+          </label>
+          <input
+            type="range"
+            min="5"
+            max="100"
+            value={distanceRadius}
+            onChange={(e) => setDistanceRadius(parseInt(e.target.value))}
+            className="w-full"
+          />
         </div>
-        
+
         {/* Relationship Goals */}
         <div>
-          <label className="block text-sm font-medium mb-3">{t('criteria.goalsLabel')}</label>
+          <label className="block text-sm font-medium mb-3">
+            Relationship Goals
+          </label>
           <div className="grid grid-cols-2 gap-3">
-            {GOALS.map(goal => (
-              <button 
+            {GOALS.map((goal) => (
+              <button
                 key={goal}
-                type="button" 
+                type="button"
                 className={`text-sm border ${
                   selectedGoal === goal
-                    ? 'bg-primary text-white border-primary'
-                    : 'border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700'
-                } rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-primary`}
+                    ? "bg-primary text-white border-primary"
+                    : "border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                } rounded-lg p-3`}
                 onClick={() => selectGoal(goal)}
               >
                 {t(`criteria.goals.${goal}`)}
@@ -151,12 +175,107 @@ const CriteriaScreen = () => {
             ))}
           </div>
         </div>
-        
-        <button 
+
+        {/* Hobbies */}
+        <div>
+          <label className="block text-sm font-medium mb-3">
+            Hobbies & Interests
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {HOBBIES.map((hobby) => (
+              <button
+                key={hobby}
+                type="button"
+                className={`px-3 py-1 rounded-full text-sm ${
+                  selectedHobbies.includes(hobby)
+                    ? "bg-primary text-white border border-primary"
+                    : "border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                }`}
+                onClick={() => toggleHobby(hobby)}
+              >
+                {hobby}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Education */}
+        <div>
+          <label className="block text-sm font-medium mb-1">Education</label>
+          <input
+            type="text"
+            value={education}
+            onChange={(e) => setEducation(e.target.value)}
+            className="w-full border px-4 py-2 rounded-lg dark:bg-gray-800"
+          />
+        </div>
+
+        {/* Occupation */}
+        <div>
+          <label className="block text-sm font-medium mb-1">Occupation</label>
+          <input
+            type="text"
+            value={occupation}
+            onChange={(e) => setOccupation(e.target.value)}
+            className="w-full border px-4 py-2 rounded-lg dark:bg-gray-800"
+          />
+        </div>
+
+        {/* Religion */}
+        <div>
+          <label className="block text-sm font-medium mb-1">Religion</label>
+          <select
+            value={religion}
+            onChange={(e) => setReligion(e.target.value)}
+            className="w-full border px-4 py-2 rounded-lg dark:bg-gray-800"
+          >
+            <option value="none">None</option>
+            <option value="christian">Christian</option>
+            <option value="muslim">Muslim</option>
+            <option value="jewish">Jewish</option>
+            <option value="hindu">Hindu</option>
+            <option value="buddhist">Buddhist</option>
+            <option value="spiritual">Spiritual</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        {/* Ethnicity */}
+        <div>
+          <label className="block text-sm font-medium mb-1">Ethnicity</label>
+          <select
+            value={ethnicity}
+            onChange={(e) => setEthnicity(e.target.value)}
+            className="w-full border px-4 py-2 rounded-lg dark:bg-gray-800"
+          >
+            <option value="none">None</option>
+            <option value="asian">Asian</option>
+            <option value="black">Black</option>
+            <option value="hispanic">Hispanic</option>
+            <option value="white">White</option>
+            <option value="mixed">Mixed</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        {/* Height */}
+        <div>
+          <label className="block text-sm font-medium mb-1">Height (cm)</label>
+          <input
+            type="number"
+            min="100"
+            max="250"
+            value={height}
+            onChange={(e) => setHeight(e.target.value)}
+            className="w-full border px-4 py-2 rounded-lg dark:bg-gray-800"
+          />
+        </div>
+
+        <button
           type="submit"
           className="w-full bg-primary text-white py-3 rounded-lg hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition font-medium"
         >
-          {t('criteria.findMatches')}
+          {t("criteria.findMatches")}
         </button>
       </form>
     </div>
