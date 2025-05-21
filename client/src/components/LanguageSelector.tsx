@@ -8,9 +8,8 @@ const LanguageSelector = () => {
 
   // Available languages
   const languages = [
-    { code: 'en', name: 'English' },
-    { code: 'es', name: 'Español' },
-    { code: 'fr', name: 'Français' }
+    { code: 'en', name: t('language.en') },
+    { code: 'tr', name: t('language.tr') }
   ];
 
   // Handle outside click to close dropdown

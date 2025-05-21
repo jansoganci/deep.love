@@ -1,6 +1,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import enTranslation from './en.json';
+import trTranslation from './tr.json';
 
 // Initialize i18n with English as the default language
 i18n
@@ -10,7 +11,9 @@ i18n
       en: {
         translation: enTranslation
       },
-      // Add more languages here as needed
+      tr: {
+        translation: trTranslation
+      }
     },
     lng: 'en', // Default language
     fallbackLng: 'en',

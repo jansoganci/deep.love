@@ -12,6 +12,7 @@
   },
   "onboarding": {
     "title": "Create Your Profile",
+    "subtitle": "Share your basic info to start finding matches",
     "uploadPhoto": "Upload Photo",
     "nameLabel": "Name",
     "namePlaceholder": "Your name",
@@ -23,6 +24,7 @@
   },
   "criteria": {
     "title": "What Are You Looking For?",
+    "subtitle": "Share your interests and preferences",
     "ageRangeLabel": "Age Range",
     "hobbiesLabel": "Hobbies & Interests",
     "goalsLabel": "Relationship Goals",
@@ -39,6 +41,7 @@
     "remaining": "Swipes remaining today: {{remaining}}/20",
     "resetCriteria": "Change My Preferences",
     "noMatches": "No more matches found based on your criteria.",
+    "noMore": "No more matches available.",
     "match": "{{percentage}}% Match"
   },
   "paywall": {
@@ -53,6 +56,11 @@
     "feature4": "Priority matching",
     "subscribe": "Subscribe",
     "continueFree": "Continue with limited swipes",
-    "testimonialsTitle": "What Our Users Say"
+    "testimonialsTitle": "What Our Users Say",
+    "cta": "Upgrade Now"
+  },
+  "language": {
+    "en": "English",
+    "tr": "Turkish"
   }
 }

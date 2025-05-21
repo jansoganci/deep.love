@@ -1,0 +1,66 @@
+{
+  "appName": "Derin Aşk",
+  "header": {
+    "currentLanguage": "Türkçe"
+  },
+  "footer": {
+    "tagline": "Yapay zeka ile mükemmel eşini bul",
+    "privacy": "Gizlilik",
+    "terms": "Şartlar",
+    "contact": "İletişim",
+    "copyright": "© 2023 Derin Aşk. Tüm hakları saklıdır."
+  },
+  "onboarding": {
+    "title": "Profilini Oluştur",
+    "subtitle": "Eşleşmeleri bulmaya başlamak için temel bilgilerini paylaş",
+    "uploadPhoto": "Fotoğraf Yükle",
+    "nameLabel": "İsim",
+    "namePlaceholder": "İsminiz",
+    "ageLabel": "Yaş",
+    "agePlaceholder": "Yaşınız",
+    "bioLabel": "Hakkımda",
+    "bioPlaceholder": "Kendinizden biraz bahsedin...",
+    "continue": "Devam Et"
+  },
+  "criteria": {
+    "title": "Ne Arıyorsun?",
+    "subtitle": "İlgi alanlarını ve tercihlerini paylaş",
+    "ageRangeLabel": "Yaş Aralığı",
+    "hobbiesLabel": "Hobiler & İlgi Alanları",
+    "goalsLabel": "İlişki Hedefleri",
+    "findMatches": "Eşleşmeleri Bul",
+    "goals": {
+      "casual": "Gündelik İlişki",
+      "longTerm": "Uzun Süreli İlişki",
+      "marriage": "Evlilik",
+      "friendship": "Arkadaşlık"
+    }
+  },
+  "matches": {
+    "title": "Eşleşmelerin",
+    "remaining": "Bugün kalan kaydırma: {{remaining}}/20",
+    "resetCriteria": "Tercihlerimi Değiştir",
+    "noMatches": "Kriterlerinize göre başka eşleşme bulunamadı.",
+    "noMore": "Daha fazla eşleşme bulunamadı.",
+    "match": "%{{percentage}} Eşleşme"
+  },
+  "paywall": {
+    "title": "Derin Aşk Pro'ya Yükselt",
+    "description": "Bugün için ücretsiz kaydırma hakkınızı kullandınız. Potansiyel partnerlerle eşleşmeye devam etmek için yükseltin.",
+    "monthlyPlan": "Aylık",
+    "yearlyPlan": "Yıllık",
+    "bestValue": "En İyi Değer",
+    "feature1": "Sınırsız kaydırma",
+    "feature2": "Seni kimlerin beğendiğini gör",
+    "feature3": "Reklamsız deneyim",
+    "feature4": "Öncelikli eşleştirme",
+    "subscribe": "Abone Ol",
+    "continueFree": "Sınırlı kaydırmalarla devam et",
+    "testimonialsTitle": "Kullanıcılarımız Ne Diyor",
+    "cta": "Şimdi Yükselt"
+  },
+  "language": {
+    "en": "İngilizce",
+    "tr": "Türkçe"
+  }
+}
