@@ -28,6 +28,8 @@ const MatchesScreen = () => {
   useEffect(() => {
     // Track if component is mounted to prevent state updates after unmount
     let isMounted = true;
+    let lastFetchTime = 0;
+    let fetchInterval: NodeJS.Timeout | null = null;
     
     async function initializeScreen() {
       try {
@@ -112,7 +114,8 @@ const MatchesScreen = () => {
         // Get matches based on criteria from Supabase
         const potentialMatches = await getMatches(userCriteria);
         
-        if (potentialMatches.length === 0) {
+        // Only show toast for empty results once, not repeatedly
+        if (potentialMatches.length === 0 && lastFetchTime === 0) {
           toast({
             title: "No Matches Found",
             description: "Try broadening your criteria or check back later for more profiles",
@@ -120,6 +123,7 @@ const MatchesScreen = () => {
         }
         
         setMatches(potentialMatches);
+        lastFetchTime = Date.now();
         
         // Redirect to paywall if already out of swipes
         if (swipesLeft <= 0 && !isPro) {
@@ -142,11 +146,22 @@ const MatchesScreen = () => {
       }
     }
     
+    // Initial load
     initializeScreen();
+    
+    // Set up refresh interval (30 seconds)
+    fetchInterval = setInterval(() => {
+      if (Date.now() - lastFetchTime >= 30000) { // Only refresh if 30s have passed
+        initializeScreen();
+      }
+    }, 30000);
     
     // Cleanup function to avoid state updates after unmount
     return () => {
       isMounted = false;
+      if (fetchInterval) {
+        clearInterval(fetchInterval);
+      }
     };
   }, [setLocation, resetMidnight, swipesLeft, isPro, toast]);
   

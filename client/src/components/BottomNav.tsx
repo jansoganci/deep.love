@@ -10,7 +10,7 @@ const BottomNav = () => {
     { path: '/matches', id: 'home', icon: '🏠', label: 'Home' },
     { path: '/matches?tab=chat', id: 'chat', icon: '💬', label: 'Matches' },
     { path: '/criteria', id: 'criteria', icon: '⚙️', label: 'Filters' },
-    { path: '/onboarding', id: 'profile', icon: '👤', label: 'Profile' },
+    { path: '/profile', id: 'profile', icon: '👤', label: 'Profile' },
   ];
 
   return (

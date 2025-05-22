@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import OnboardingScreen from "./screens/OnboardingScreen";
 import CriteriaScreen from "./screens/CriteriaScreen";
 import MatchesScreen from "./screens/MatchesScreen";
+import ProfileScreen from "./screens/ProfileScreen";
 import PaywallScreen from "./screens/PaywallScreen";
 import LoginScreen from "./screens/LoginScreen";
 import SignupScreen from "./screens/SignupScreen";
@@ -56,6 +57,12 @@ const AppRoutes = () => {
       <Route path="/paywall">
         <PrivateRoute>
           <PaywallScreen />
+        </PrivateRoute>
+      </Route>
+      
+      <Route path="/profile">
+        <PrivateRoute>
+          <ProfileScreen />
         </PrivateRoute>
       </Route>
       
