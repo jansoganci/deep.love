@@ -50,12 +50,21 @@ export async function uploadAvatar(
 
 /**
  * Record a swipe action (`left` or `right`) between two users.
+ * Ensures that IDs are valid UUIDs.
  */
 export async function recordSwipe(
   fromId: string,
   toId: string,
   direction: "left" | "right",
 ): Promise<void> {
+  // Validate that toId is a proper UUID
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  
+  if (!uuidRegex.test(toId)) {
+    console.error(`Invalid UUID format for toId: ${toId}`);
+    throw new Error("Invalid profile ID format. Expected UUID.");
+  }
+  
   const { error } = await supabase.from("swipes").insert({
     from_id: fromId,
     to_id: toId,
