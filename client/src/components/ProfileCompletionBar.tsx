@@ -13,45 +13,57 @@ interface ProfileCompletionBarProps {
 const ProfileCompletionBar = ({ profile }: ProfileCompletionBarProps) => {
   const [completionPercentage, setCompletionPercentage] = useState(0);
   
-  // Calculate profile completion percentage
+  // Calculate profile completion percentage with animation
   useEffect(() => {
-    const requiredFields = ['display_name', 'avatar_url', 'age', 'bio'];
-    const optionalFields = ['occupation', 'interests', 'relationship_goal', 'gender', 'religion', 'ethnicity', 'height'];
+    // Each field contributes 25% to the total
+    const fields = ['display_name', 'avatar_url', 'age', 'bio'];
+    const weightPerField = 25;
     
-    // Required fields count double (10% each)
-    const requiredWeight = 10;
-    // Optional fields count as 5% each
-    const optionalWeight = 5;
-    
-    // Calculate score for required fields
-    const requiredScore = requiredFields.reduce((score, field) => {
-      return score + (profile[field as keyof typeof profile] ? requiredWeight : 0);
+    // Calculate the actual completion percentage
+    const actualPercentage = fields.reduce((score, field) => {
+      return score + (profile[field as keyof typeof profile] ? weightPerField : 0);
     }, 0);
     
-    // Calculate score for optional fields
-    const optionalScore = optionalFields.reduce((score, field) => {
-      // For arrays, check if they have at least one item
-      if (field === 'interests') {
-        return score + (profile[field as keyof typeof profile] && 
-                       (profile[field as keyof typeof profile] as string[]).length > 0 ? 
-                       optionalWeight : 0);
+    // Animate from current percentage to actual percentage
+    let startValue = completionPercentage;
+    let endValue = actualPercentage;
+    let duration = 1000; // ms
+    let startTime: number | null = null;
+    
+    const animateProgress = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const elapsedTime = timestamp - startTime;
+      const progress = Math.min(elapsedTime / duration, 1);
+      
+      // Easing function for smooth animation
+      const easeOutQuad = (t: number) => t * (2 - t);
+      const easedProgress = easeOutQuad(progress);
+      
+      // Calculate the current value
+      const currentValue = Math.round(startValue + (endValue - startValue) * easedProgress);
+      setCompletionPercentage(currentValue);
+      
+      // Continue animation if not finished
+      if (progress < 1) {
+        requestAnimationFrame(animateProgress);
       }
-      return score + (profile[field as keyof typeof profile] ? optionalWeight : 0);
-    }, 0);
+    };
     
-    // Calculate total percentage (max 100%)
-    const totalPercentage = Math.min(100, requiredScore + optionalScore);
+    // Start the animation
+    requestAnimationFrame(animateProgress);
     
-    // Animate the completion bar
-    setCompletionPercentage(totalPercentage);
+    // Cleanup function
+    return () => {
+      startTime = null;
+    };
   }, [profile]);
   
-  // Define gradient colors based on completion
+  // Define colors based on completion percentage
   const getProgressColor = () => {
-    if (completionPercentage < 30) return 'from-red-500 to-red-400';
-    if (completionPercentage < 60) return 'from-yellow-500 to-yellow-400';
-    if (completionPercentage < 90) return 'from-blue-500 to-blue-400';
-    return 'from-green-500 to-green-400';
+    if (completionPercentage < 30) return 'bg-red-500';
+    if (completionPercentage < 60) return 'bg-yellow-500';
+    if (completionPercentage < 90) return 'bg-blue-500';
+    return 'bg-green-500';
   };
   
   return (
@@ -61,10 +73,12 @@ const ProfileCompletionBar = ({ profile }: ProfileCompletionBarProps) => {
         <span className="text-sm font-medium">{completionPercentage}%</span>
       </div>
       
-      <Progress 
-        value={completionPercentage} 
-        className={`h-3 bg-gray-100 dark:bg-gray-800 ${getProgressColor()}`} 
-      />
+      <div className="relative h-3 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+        <div 
+          className={`absolute top-0 left-0 h-full ${getProgressColor()} transition-all duration-700 ease-out rounded-full`}
+          style={{ width: `${completionPercentage}%` }}
+        ></div>
+      </div>
       
       {completionPercentage < 100 && (
         <p className="text-xs text-gray-500 dark:text-gray-400">

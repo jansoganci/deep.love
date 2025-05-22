@@ -148,74 +148,42 @@ const ProfileScreen = () => {
         </p>
       </div>
       
-      {/* Additional Profile Details */}
-      {(profile.occupation || profile.gender || profile.religion || profile.ethnicity || 
-        (profile.interests && profile.interests.length > 0) || profile.relationship_goal || profile.height) && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
-          <h3 className="text-lg font-medium mb-4">{t('profile.details', 'Details')}</h3>
+      {/* Profile Enhancement Suggestions */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+        <h3 className="text-lg font-medium mb-4">{t('profile.enhance', 'Enhance Your Profile')}</h3>
           
-          <div className="space-y-3">
-            {profile.occupation && (
-              <div className="flex">
-                <span className="font-medium w-32">{t('profile.occupation', 'Occupation')}:</span>
-                <span className="text-gray-700 dark:text-gray-300">{profile.occupation}</span>
-              </div>
-            )}
-            
-            {profile.gender && (
-              <div className="flex">
-                <span className="font-medium w-32">{t('profile.gender', 'Gender')}:</span>
-                <span className="text-gray-700 dark:text-gray-300">{profile.gender}</span>
-              </div>
-            )}
-            
-            {profile.relationship_goal && (
-              <div className="flex">
-                <span className="font-medium w-32">{t('profile.goal', 'Looking for')}:</span>
-                <span className="text-gray-700 dark:text-gray-300">{profile.relationship_goal}</span>
-              </div>
-            )}
-            
-            {profile.religion && profile.religion !== 'none' && (
-              <div className="flex">
-                <span className="font-medium w-32">{t('profile.religion', 'Religion')}:</span>
-                <span className="text-gray-700 dark:text-gray-300">{profile.religion}</span>
-              </div>
-            )}
-            
-            {profile.ethnicity && profile.ethnicity !== 'none' && (
-              <div className="flex">
-                <span className="font-medium w-32">{t('profile.ethnicity', 'Ethnicity')}:</span>
-                <span className="text-gray-700 dark:text-gray-300">{profile.ethnicity}</span>
-              </div>
-            )}
-            
-            {profile.height && (
-              <div className="flex">
-                <span className="font-medium w-32">{t('profile.height', 'Height')}:</span>
-                <span className="text-gray-700 dark:text-gray-300">{profile.height} cm</span>
-              </div>
-            )}
+        <div className="space-y-4">
+          <div className="flex items-center">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-4">
+              <span className="text-primary text-lg">📋</span>
+            </div>
+            <div>
+              <p className="font-medium">{t('profile.addDetails', 'Add More Details')}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{t('profile.addDetailsDesc', 'Complete your profile to get more relevant matches')}</p>
+            </div>
           </div>
           
-          {/* Interests Tags */}
-          {profile.interests && profile.interests.length > 0 && (
-            <div className="mt-4">
-              <span className="font-medium block mb-2">{t('profile.interests', 'Interests')}:</span>
-              <div className="flex flex-wrap gap-2">
-                {profile.interests.map((interest, index) => (
-                  <span 
-                    key={index} 
-                    className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm"
-                  >
-                    {interest}
-                  </span>
-                ))}
-              </div>
+          <div className="flex items-center">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-4">
+              <span className="text-primary text-lg">🏷️</span>
             </div>
-          )}
+            <div>
+              <p className="font-medium">{t('profile.addInterests', 'Add Your Interests')}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{t('profile.addInterestsDesc', 'What makes you unique? Add interests to find like-minded people')}</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mr-4">
+              <span className="text-primary text-lg">📸</span>
+            </div>
+            <div>
+              <p className="font-medium">{t('profile.addPhotos', 'Add Better Photos')}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{t('profile.addPhotosDesc', 'Clear photos of yourself increase your chances of matching')}</p>
+            </div>
+          </div>
         </div>
-      )}
+      </div>
       
       <div className="flex justify-between mb-8">
         <button 
