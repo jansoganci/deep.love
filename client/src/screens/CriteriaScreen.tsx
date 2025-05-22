@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { UserCriteria } from "../types";
 import { saveUserCriteria } from "../services/storage";
+import { supabase } from "../services/supabase";
+import { useToast } from "../hooks/use-toast";
 
 const HOBBIES = [
   "Cooking",
@@ -22,6 +24,8 @@ const GOALS = ["casual", "longTerm", "marriage", "friendship"];
 const CriteriaScreen = () => {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
 
   const [ageRange, setAgeRange] = useState<[number, number]>([18, 40]);
   const [selectedHobbies, setSelectedHobbies] = useState<string[]>([]);
@@ -33,6 +37,77 @@ const CriteriaScreen = () => {
   const [religion, setReligion] = useState<string>("none");
   const [ethnicity, setEthnicity] = useState<string>("none");
   const [height, setHeight] = useState<string>("");
+
+  // Check if user already has criteria saved
+  useEffect(() => {
+    async function checkExistingCriteria() {
+      try {
+        setLoading(true);
+        
+        // Get the current authenticated user
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          console.error("No authenticated user found");
+          setLocation('/login');
+          return;
+        }
+        
+        // Check if user already has criteria saved
+        const { data, error } = await supabase
+          .from('criteria')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+          
+        if (error) {
+          if (error.code !== 'PGRST116') { // PGRST116 means no results found
+            console.error("Error fetching criteria:", error);
+            toast({
+              title: "Error",
+              description: "Failed to load your preferences. Please try again.",
+              variant: "destructive"
+            });
+          }
+          // No criteria found, show the form
+          setLoading(false);
+          return;
+        }
+        
+        if (data) {
+          console.log("Found existing criteria:", data);
+          
+          // User already has criteria saved, skip to matches screen
+          // But first, save to local storage for backward compatibility
+          const userCriteria: UserCriteria = {
+            ageRange: [data.age_min, data.age_max],
+            hobbies: data.hobbies || [],
+            relationshipGoal: data.relationship_goal,
+            genderPreference: data.gender || "any",
+            distanceRadius: data.distance_km || 50,
+            education: data.education || "",
+            occupation: data.occupation || "",
+            religion: data.religion || "none",
+            ethnicity: data.ethnicity || "none",
+            height: data.height_cm
+          };
+          
+          saveUserCriteria(userCriteria);
+          
+          // Redirect to matches screen
+          setLocation('/matches');
+          return;
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error("Error checking existing criteria:", error);
+        setLoading(false);
+      }
+    }
+    
+    checkExistingCriteria();
+  }, [setLocation, toast]);
 
   const handleMinAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const minAge = parseInt(e.target.value, 10);
@@ -56,35 +131,119 @@ const CriteriaScreen = () => {
     setSelectedGoal(goal);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (selectedHobbies.length === 0) {
-      alert("Please select at least one hobby");
+      toast({
+        title: "Missing Information",
+        description: "Please select at least one hobby",
+        variant: "destructive"
+      });
       return;
     }
 
     if (!selectedGoal) {
-      alert("Please select a relationship goal");
+      toast({
+        title: "Missing Information",
+        description: "Please select a relationship goal",
+        variant: "destructive"
+      });
       return;
     }
 
-    const userCriteria: UserCriteria = {
-      ageRange,
-      hobbies: selectedHobbies,
-      relationshipGoal: selectedGoal,
-      genderPreference,
-      distanceRadius,
-      education,
-      occupation,
-      religion,
-      ethnicity,
-      height: height ? parseInt(height, 10) : undefined,
-    };
-
-    saveUserCriteria(userCriteria);
-    setLocation("/matches");
+    try {
+      setLoading(true);
+      
+      // Get the current authenticated user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        console.error("No authenticated user found");
+        toast({
+          title: "Authentication Required",
+          description: "You need to be logged in to save preferences",
+          variant: "destructive"
+        });
+        setLocation('/login');
+        return;
+      }
+      
+      // Create criteria object for Supabase
+      const criteriaData = {
+        user_id: user.id,
+        age_min: ageRange[0],
+        age_max: ageRange[1],
+        gender: genderPreference,
+        distance_km: distanceRadius,
+        education: education || null,
+        occupation: occupation || null,
+        religion: religion,
+        ethnicity: ethnicity,
+        hobbies: selectedHobbies,
+        relationship_goal: selectedGoal,
+        height_cm: height ? parseInt(height, 10) : null,
+        updated_at: new Date().toISOString()
+      };
+      
+      // Save to Supabase (upsert - insert if not exists, update if exists)
+      const { error } = await supabase
+        .from('criteria')
+        .upsert(criteriaData);
+      
+      if (error) {
+        console.error("Error saving criteria:", error);
+        toast({
+          title: "Error",
+          description: "Failed to save your preferences. Please try again.",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
+      
+      // Also save to local storage for backward compatibility
+      const userCriteria: UserCriteria = {
+        ageRange,
+        hobbies: selectedHobbies,
+        relationshipGoal: selectedGoal,
+        genderPreference,
+        distanceRadius,
+        education,
+        occupation,
+        religion,
+        ethnicity,
+        height: height ? parseInt(height, 10) : undefined,
+      };
+      
+      saveUserCriteria(userCriteria);
+      
+      toast({
+        title: "Preferences Saved",
+        description: "Your criteria have been saved successfully!"
+      });
+      
+      // Navigate to matches screen
+      setLocation("/matches");
+    } catch (error) {
+      console.error("Error in handleSubmit:", error);
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive"
+      });
+      setLoading(false);
+    }
   };
+
+  // Show loading spinner while checking for existing criteria
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-md mx-auto">

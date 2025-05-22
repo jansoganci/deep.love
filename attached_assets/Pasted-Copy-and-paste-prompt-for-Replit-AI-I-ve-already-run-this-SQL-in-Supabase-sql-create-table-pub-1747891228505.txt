@@ -1,0 +1,72 @@
+Copy-and-paste prompt for Replit AI
+
+I’ve already run this SQL in Supabase:
+
+```sql
+create table public.criteria (
+  user_id uuid primary key references auth.users,
+  age_min int,
+  age_max int,
+  gender text,
+  distance_km int,
+  education text,
+  occupation text,
+  religion text,
+  ethnicity text,
+  hobbies text[],
+  relationship_goal text,
+  height_cm int,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+alter table public.criteria enable row level security;
+
+create policy "Users CRUD own criteria"
+  on public.criteria
+  for all
+  using  (user_id = auth.uid())
+  with check (user_id = auth.uid());
+
+I need three things:
+
+⸻
+
+1  ―  Save criteria once, don’t ask every login
+	•	Logic:
+	•	When the user reaches /criteria, first check public.criteria for a row with user_id = auth.uid().
+	•	If it exists → skip the form and setLocation('/home').
+	•	If it doesn’t → show the form; on submit use upsert (user_id = auth.uid()) then redirect to /home.
+	•	Update:
+	•	Modify CriteriaScreen.tsx to call supabase.from('criteria').select('*').single() on mount.
+	•	On submit, upsert into criteria instead of writing to local-storage only.
+	•	Update UserCriteria type to match the table columns (age_min, age_max, hobby array, etc.).
+
+⸻
+
+2  ―  Add a bottom tab-bar (Tailwind) visible on every page
+
+Routes and icons:
+
+Path	Icon/Text	Component
+/home	🏠 Home	Swipe / cards
+/matches	💬 Matches	MatchesScreen
+/criteria	⚙️ Filters	CriteriaScreen
+/profile	👤 Profile	ProfileScreen
+
+	•	Make a BottomNav.tsx component and place it just before <Footer /> in App.tsx so it shows on all routes.
+	•	Use Wouter’s <Link> for navigation; highlight active tab.
+
+⸻
+
+3  ―  Seed real fake data & fix UUID swipe bug
+	•	In mockProfiles.json replace numeric "id": "1" … "8" with real v4 UUIDs.
+	•	Write a one-time script (or function in scripts/seed.ts) that reads mockProfiles.json and inserts those 20–25 profiles into public.profiles in Supabase (each row must use a valid UUID and include display_name, avatar_url, age, bio, etc.).
+	•	Update the swipe code (recordSwipe or wherever) so it passes the target user’s UUID for to_id, not a numeric string, eliminating
+
+invalid input syntax for type uuid: "2"
+
+
+
+Let me know if you need any of the existing files; otherwise please implement the above changes.
+

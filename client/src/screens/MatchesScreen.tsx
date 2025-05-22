@@ -6,12 +6,12 @@ import FreemiumBanner from '../components/FreemiumBanner';
 import BannerAdPlaceholder from '../components/BannerAdPlaceholder';
 import GenerateFakeProfiles from '../components/GenerateFakeProfiles';
 import { getMatches } from '../services/matchEngine';
-import { loadUserCriteria, loadUserProfile } from '../services/storage';
+import { loadUserCriteria, loadUserProfile, saveUserCriteria } from '../services/storage';
 import { useSwipeLimit } from '../hooks/useSwipeLimit';
 import { useEntitlement } from '../hooks/useEntitlement';
 import { supabase, recordSwipe } from '../services/supabase';
 import { useToast } from '../hooks/use-toast';
-import { Profile } from '../types';
+import { Profile, UserCriteria } from '../types';
 
 const MatchesScreen = () => {
   const { t } = useTranslation();
@@ -32,16 +32,7 @@ const MatchesScreen = () => {
         // Reset swipes if it's a new day
         resetMidnight();
         
-        const userCriteria = loadUserCriteria();
-        const userProfile = loadUserProfile();
-        
-        if (!userCriteria) {
-          // Redirect to criteria screen if no criteria is set
-          setLocation('/criteria');
-          return;
-        }
-        
-        // Try to get the authenticated user from Supabase
+        // Get the current authenticated user
         const { data: { user } } = await supabase.auth.getUser();
         
         // Must have authenticated user to continue
@@ -57,6 +48,64 @@ const MatchesScreen = () => {
         
         setCurrentUser({ id: user.id });
         console.log("Current user ID:", user.id);
+        
+        // Try to load criteria from Supabase first
+        let userCriteria: UserCriteria | null = null;
+        
+        const { data: criteriaData, error: criteriaError } = await supabase
+          .from('criteria')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+          
+        if (criteriaError) {
+          if (criteriaError.code !== 'PGRST116') { // PGRST116 means no results found
+            console.error("Error fetching criteria:", criteriaError);
+            toast({
+              title: "Error",
+              description: "Failed to load your preferences. Checking local storage as fallback.",
+            });
+          }
+          
+          // Fallback to local storage
+          userCriteria = loadUserCriteria();
+        } else if (criteriaData) {
+          // Convert from Supabase format to our app format
+          const convertedCriteria: UserCriteria = {
+            ageRange: [criteriaData.age_min, criteriaData.age_max] as [number, number],
+            hobbies: criteriaData.hobbies || [],
+            relationshipGoal: criteriaData.relationship_goal,
+            genderPreference: criteriaData.gender || "any",
+            distanceRadius: criteriaData.distance_km || 50,
+            education: criteriaData.education || "",
+            occupation: criteriaData.occupation || "",
+            religion: criteriaData.religion || "none",
+            ethnicity: criteriaData.ethnicity || "none",
+            height: criteriaData.height_cm
+          };
+          
+          userCriteria = convertedCriteria;
+          
+          // Save to local storage for compatibility
+          saveUserCriteria(userCriteria);
+        } else {
+          // Fallback to local storage
+          userCriteria = loadUserCriteria();
+        }
+        
+        // Check if we have criteria from either source
+        if (!userCriteria) {
+          // Redirect to criteria screen if no criteria is found
+          toast({
+            title: "Matching Criteria Needed",
+            description: "Please set your matching preferences first",
+          });
+          setLocation('/criteria');
+          return;
+        }
+        
+        // Check if user has a profile
+        const userProfile = loadUserProfile();
         
         // Get matches based on criteria from Supabase
         const potentialMatches = await getMatches(userCriteria);
