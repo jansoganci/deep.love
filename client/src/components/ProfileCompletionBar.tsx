@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Progress } from '@/components/ui/progress';
+import { Progress } from './ui/progress';
 
 interface ProfileCompletionBarProps {
   profile: {
@@ -8,13 +7,6 @@ interface ProfileCompletionBarProps {
     avatar_url?: string;
     age?: number;
     bio?: string;
-    occupation?: string;
-    interests?: string[];
-    relationship_goal?: string;
-    gender?: string;
-    religion?: string;
-    ethnicity?: string;
-    height?: number;
   };
 }
 
@@ -69,15 +61,10 @@ const ProfileCompletionBar = ({ profile }: ProfileCompletionBarProps) => {
         <span className="text-sm font-medium">{completionPercentage}%</span>
       </div>
       
-      <div className="relative">
-        <Progress value={completionPercentage} className={`h-3 bg-gray-100 dark:bg-gray-800`} />
-        <motion.div 
-          className={`absolute inset-0 h-3 bg-gradient-to-r ${getProgressColor()} rounded-full`}
-          initial={{ width: '0%' }}
-          animate={{ width: `${completionPercentage}%` }}
-          transition={{ duration: 1, ease: "easeOut" }}
-        />
-      </div>
+      <Progress 
+        value={completionPercentage} 
+        className={`h-3 bg-gray-100 dark:bg-gray-800 ${getProgressColor()}`} 
+      />
       
       {completionPercentage < 100 && (
         <p className="text-xs text-gray-500 dark:text-gray-400">

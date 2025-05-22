@@ -51,7 +51,7 @@ const ProfileScreen = () => {
         // Fetch the user's profile from Supabase
         const { data, error } = await supabase
           .from('profiles')
-          .select('id, display_name, avatar_url, age, bio, occupation, interests, relationship_goal, gender, religion, ethnicity, height')
+          .select('id, display_name, avatar_url, age, bio')
           .eq('id', user.id)
           .single();
           
