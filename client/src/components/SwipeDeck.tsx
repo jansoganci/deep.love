@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Profile } from '../types';
 import { track } from '../services/analytics';
+import './SwipeAnimation.css';
+import confettiSvg from '../assets/confetti.svg';
 
 interface SwipeDeckProps {
   profiles: Profile[];
@@ -15,6 +17,9 @@ const SwipeDeck = ({ profiles, onSwipeLeft, onSwipeRight, onEmpty }: SwipeDeckPr
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSwipeActive, setIsSwipeActive] = useState(false);
   const [swipeDirection, setSwipeDirection] = useState<'left' | 'right' | null>(null);
+  const [swipeClass, setSwipeClass] = useState<'swipe-left' | 'swipe-right' | ''>('');
+  const [showMatchAnimation, setShowMatchAnimation] = useState(false);
+  const [matchedProfile, setMatchedProfile] = useState<Profile | null>(null);
   const startXRef = useRef(0);
   const currentXRef = useRef(0);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -63,22 +68,50 @@ const SwipeDeck = ({ profiles, onSwipeLeft, onSwipeRight, onEmpty }: SwipeDeckPr
     // Calculate movement distance
     const deltaX = currentX - startXRef.current;
     
-    // Update card position
+    // Update card position with better visual feedback
     const card = cardRefs.current[currentIndex];
     if (card) {
-      card.style.transform = `translateX(${deltaX}px) rotate(${deltaX * 0.1}deg)`;
+      // Apply transform with smooth rotation and scaling based on swipe distance
+      card.style.transform = `translateX(${deltaX}px) rotate(${deltaX * 0.08}deg) scale(${1 - Math.abs(deltaX) * 0.0005})`;
       
-      // Update swipe direction visual indicator
+      // Add tilt effect based on drag distance for more natural feel
+      const tiltY = Math.min(Math.max(deltaX * 0.05, -10), 10);
+      card.style.boxShadow = `0 ${5 + Math.abs(deltaX * 0.05)}px ${20 + Math.abs(deltaX * 0.1)}px rgba(0, 0, 0, ${0.1 + Math.abs(deltaX) * 0.0005})`;
+      
+      // Update swipe direction visual indicator with classes for better styling
       if (deltaX > 50) {
         setSwipeDirection('right');
+        setSwipeClass('swipe-right');
       } else if (deltaX < -50) {
         setSwipeDirection('left');
+        setSwipeClass('swipe-left');
       } else {
         setSwipeDirection(null);
+        setSwipeClass('');
+      }
+      
+      // Apply haptic feedback effect when crossing thresholds
+      if ((deltaX > 0 && deltaX > 100) || (deltaX < 0 && deltaX < -100)) {
+        card.classList.add('swipe-haptic');
+        setTimeout(() => {
+          card.classList.remove('swipe-haptic');
+        }, 150);
       }
     }
   };
 
+  // Show match animation popup
+  const showMatchPopup = (profile: Profile) => {
+    setMatchedProfile(profile);
+    setShowMatchAnimation(true);
+    
+    // Automatically hide the match animation after a delay
+    setTimeout(() => {
+      setShowMatchAnimation(false);
+      setMatchedProfile(null);
+    }, 4000);
+  };
+  
   // Handle touch/mouse end
   const handleSwipeEnd = () => {
     if (!isSwipeActive || currentIndex >= profiles.length) return;
@@ -94,6 +127,12 @@ const SwipeDeck = ({ profiles, onSwipeLeft, onSwipeRight, onEmpty }: SwipeDeckPr
       if (deltaX > threshold) {
         // Swipe right - complete animation and trigger callback
         card.classList.add('swiped-right');
+        
+        // Add enhanced animation classes
+        card.style.transition = 'all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        card.style.transform = `translateX(${window.innerWidth * 1.5}px) rotate(${30 + Math.random() * 10}deg)`;
+        card.style.opacity = '0';
+        
         setTimeout(() => {
           // Track the swipe right event
           track('swipe', { 
@@ -102,20 +141,37 @@ const SwipeDeck = ({ profiles, onSwipeLeft, onSwipeRight, onEmpty }: SwipeDeckPr
             matchPercentage: profiles[currentIndex].matchPercentage
           });
             
-          // Track match event if percentage is high
+          // Show match animation if percentage is high
           if (profiles[currentIndex].matchPercentage > 80) {
             track('match', { 
               profileId: profiles[currentIndex].id,
               matchPercentage: profiles[currentIndex].matchPercentage 
             });
+            
+            // Trigger the match animation
+            showMatchPopup(profiles[currentIndex]);
           }
           
           onSwipeRight(profiles[currentIndex].id);
           setCurrentIndex(prevIndex => prevIndex + 1);
+          
+          // Apply stack effect to reveal next card with animation
+          if (currentIndex + 1 < profiles.length) {
+            const nextCard = cardRefs.current[currentIndex + 1];
+            if (nextCard) {
+              nextCard.classList.add('card-stack-effect');
+            }
+          }
         }, 300);
       } else if (deltaX < -threshold) {
         // Swipe left - complete animation and trigger callback
         card.classList.add('swiped-left');
+        
+        // Add enhanced animation classes
+        card.style.transition = 'all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        card.style.transform = `translateX(${-window.innerWidth * 1.5}px) rotate(${-30 - Math.random() * 10}deg)`;
+        card.style.opacity = '0';
+        
         setTimeout(() => {
           // Track the swipe left event
           track('swipe', { 
@@ -126,15 +182,29 @@ const SwipeDeck = ({ profiles, onSwipeLeft, onSwipeRight, onEmpty }: SwipeDeckPr
           
           onSwipeLeft(profiles[currentIndex].id);
           setCurrentIndex(prevIndex => prevIndex + 1);
+          
+          // Apply stack effect to reveal next card with animation
+          if (currentIndex + 1 < profiles.length) {
+            const nextCard = cardRefs.current[currentIndex + 1];
+            if (nextCard) {
+              nextCard.classList.add('card-stack-effect');
+            }
+          }
         }, 300);
       } else {
-        // Reset card position if no swipe
+        // Reset card position if no swipe with a smooth spring effect
+        card.style.transition = 'all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
         card.style.transform = '';
+        card.style.boxShadow = '';
+        setTimeout(() => {
+          card.style.transition = '';
+        }, 500);
       }
     }
     
     setIsSwipeActive(false);
     setSwipeDirection(null);
+    setSwipeClass('');
   };
 
   // Handle swipe with buttons
@@ -143,8 +213,19 @@ const SwipeDeck = ({ profiles, onSwipeLeft, onSwipeRight, onEmpty }: SwipeDeckPr
     
     const card = cardRefs.current[currentIndex];
     if (card) {
+      // Apply appropriate swipe class for visual feedback
+      setSwipeClass(direction === 'left' ? 'swipe-left' : 'swipe-right');
+      
       if (direction === 'left') {
+        // Enhance button swipe left animation
+        card.classList.add('swipe-haptic');
         card.classList.add('swiped-left');
+        
+        // Add enhanced animation 
+        card.style.transition = 'all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        card.style.transform = `translateX(${-window.innerWidth * 1.5}px) rotate(${-30 - Math.random() * 10}deg)`;
+        card.style.opacity = '0';
+        
         setTimeout(() => {
           // Track button swipe left
           track('swipe', { 
@@ -156,9 +237,26 @@ const SwipeDeck = ({ profiles, onSwipeLeft, onSwipeRight, onEmpty }: SwipeDeckPr
           
           onSwipeLeft(profiles[currentIndex].id);
           setCurrentIndex(prevIndex => prevIndex + 1);
-        }, 300);
+          setSwipeClass('');
+          
+          // Apply stack effect to next card
+          if (currentIndex + 1 < profiles.length) {
+            const nextCard = cardRefs.current[currentIndex + 1];
+            if (nextCard) {
+              nextCard.classList.add('card-stack-effect');
+            }
+          }
+        }, 500);
       } else {
+        // Enhance button swipe right animation
+        card.classList.add('swipe-haptic');
         card.classList.add('swiped-right');
+        
+        // Add enhanced animation
+        card.style.transition = 'all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        card.style.transform = `translateX(${window.innerWidth * 1.5}px) rotate(${30 + Math.random() * 10}deg)`;
+        card.style.opacity = '0';
+        
         setTimeout(() => {
           // Track button swipe right
           track('swipe', { 
@@ -168,18 +266,30 @@ const SwipeDeck = ({ profiles, onSwipeLeft, onSwipeRight, onEmpty }: SwipeDeckPr
             matchPercentage: profiles[currentIndex].matchPercentage
           });
           
-          // Track match event if percentage is high
+          // Track match event and show animation if percentage is high
           if (profiles[currentIndex].matchPercentage > 80) {
             track('match', { 
               profileId: profiles[currentIndex].id,
               matchPercentage: profiles[currentIndex].matchPercentage,
               method: 'button'
             });
+            
+            // Show match animation
+            showMatchPopup(profiles[currentIndex]);
           }
           
           onSwipeRight(profiles[currentIndex].id);
           setCurrentIndex(prevIndex => prevIndex + 1);
-        }, 300);
+          setSwipeClass('');
+          
+          // Apply stack effect to next card
+          if (currentIndex + 1 < profiles.length) {
+            const nextCard = cardRefs.current[currentIndex + 1];
+            if (nextCard) {
+              nextCard.classList.add('card-stack-effect');
+            }
+          }
+        }, 500);
       }
     }
   };
@@ -261,16 +371,52 @@ const SwipeDeck = ({ profiles, onSwipeLeft, onSwipeRight, onEmpty }: SwipeDeckPr
         </button>
       </div>
 
-      {/* Swipe Direction Indicator */}
-      {swipeDirection === 'left' && (
-        <div className="absolute top-1/2 left-1/4 transform -translate-y-1/2 -translate-x-1/2 bg-error/80 text-white text-2xl font-bold rounded-full p-6 rotate-[-20deg]">
-          NOPE
-        </div>
-      )}
+      {/* Enhanced Swipe Indicators */}
+      <div className={`absolute top-40 left-8 nope-badge ${swipeClass === 'swipe-left' ? 'opacity-100' : ''}`}>
+        NOPE
+      </div>
       
-      {swipeDirection === 'right' && (
-        <div className="absolute top-1/2 right-1/4 transform -translate-y-1/2 translate-x-1/2 bg-success/80 text-white text-2xl font-bold rounded-full p-6 rotate-[20deg]">
-          LIKE
+      <div className={`absolute top-40 right-8 like-badge ${swipeClass === 'swipe-right' ? 'opacity-100' : ''}`}>
+        LIKE
+      </div>
+      
+      {/* Match Animation Popup */}
+      {showMatchAnimation && matchedProfile && (
+        <div className="match-animation">
+          <div className="match-animation-content">
+            <img src={confettiSvg} alt="Confetti" className="confetti" />
+            <h2 className="match-title">{t('matches.itsAMatch', 'It\'s a Match!')}</h2>
+            <p className="text-gray-600 dark:text-gray-400 text-lg">
+              {t('matches.matchDescription', 'You and {{name}} liked each other!', { name: matchedProfile.name })}
+            </p>
+            <div className="mt-4 mb-6 flex justify-center items-center">
+              <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-primary mr-2">
+                <img 
+                  src={matchedProfile.photo} 
+                  alt={matchedProfile.name} 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="text-5xl mx-2">💕</div>
+              <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-primary ml-2 bg-gray-300">
+                <div className="w-full h-full flex items-center justify-center text-3xl">
+                  👤
+                </div>
+              </div>
+            </div>
+            <div className="match-percentage">{matchedProfile.matchPercentage}%</div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+              {t('matches.matchMessage', 'Based on your preferences, you\'re a great match!')}
+            </p>
+            <div className="flex space-x-3 justify-center">
+              <button 
+                onClick={() => setShowMatchAnimation(false)}
+                className="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-full hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              >
+                {t('matches.keepSwiping', 'Keep Swiping')}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

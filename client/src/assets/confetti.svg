@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="300" height="300" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="150" cy="100" r="8" fill="#FF3E6C"/>
+  <circle cx="180" cy="120" r="10" fill="#FFBD3E"/>
+  <circle cx="120" cy="120" r="6" fill="#3ECAFF"/>
+  <path d="M100 140L110 120L90 120L100 140Z" fill="#FF3E6C"/>
+  <path d="M200 140L210 120L190 120L200 140Z" fill="#3ECAFF"/>
+  <path d="M150 160L160 140L140 140L150 160Z" fill="#FFBD3E"/>
+  <rect x="95" y="150" width="10" height="10" transform="rotate(45 95 150)" fill="#3ECAFF"/>
+  <rect x="205" y="150" width="10" height="10" transform="rotate(45 205 150)" fill="#FF3E6C"/>
+  <rect x="150" y="180" width="10" height="10" transform="rotate(45 150 180)" fill="#FFBD3E"/>
+  <circle cx="120" cy="170" r="5" fill="#FF3E6C"/>
+  <circle cx="180" cy="170" r="5" fill="#3ECAFF"/>
+  <circle cx="150" cy="200" r="5" fill="#FFBD3E"/>
+</svg>
