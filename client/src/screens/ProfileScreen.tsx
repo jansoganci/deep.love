@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/use-toast';
+import ProfileCompletionBar from '../components/ProfileCompletionBar';
 
 interface UserProfile {
   id: string;
@@ -11,6 +12,13 @@ interface UserProfile {
   avatar_url: string;
   age: number;
   bio: string;
+  occupation?: string;
+  interests?: string[];
+  relationship_goal?: string;
+  gender?: string;
+  religion?: string;
+  ethnicity?: string;
+  height?: number;
 }
 
 const ProfileScreen = () => {
@@ -43,7 +51,7 @@ const ProfileScreen = () => {
         // Fetch the user's profile from Supabase
         const { data, error } = await supabase
           .from('profiles')
-          .select('id, display_name, avatar_url, age, bio')
+          .select('id, display_name, avatar_url, age, bio, occupation, interests, relationship_goal, gender, religion, ethnicity, height')
           .eq('id', user.id)
           .single();
           
@@ -127,6 +135,12 @@ const ProfileScreen = () => {
         <p className="text-gray-600 dark:text-gray-400 mb-4">{profile.age} years old</p>
       </div>
       
+      {/* Profile Completion Bar */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+        <ProfileCompletionBar profile={profile} />
+      </div>
+      
+      {/* About Me Section */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
         <h3 className="text-lg font-medium mb-3">{t('profile.about', 'About Me')}</h3>
         <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
@@ -134,12 +148,88 @@ const ProfileScreen = () => {
         </p>
       </div>
       
-      <div className="flex justify-center">
+      {/* Additional Profile Details */}
+      {(profile.occupation || profile.gender || profile.religion || profile.ethnicity || 
+        (profile.interests && profile.interests.length > 0) || profile.relationship_goal || profile.height) && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+          <h3 className="text-lg font-medium mb-4">{t('profile.details', 'Details')}</h3>
+          
+          <div className="space-y-3">
+            {profile.occupation && (
+              <div className="flex">
+                <span className="font-medium w-32">{t('profile.occupation', 'Occupation')}:</span>
+                <span className="text-gray-700 dark:text-gray-300">{profile.occupation}</span>
+              </div>
+            )}
+            
+            {profile.gender && (
+              <div className="flex">
+                <span className="font-medium w-32">{t('profile.gender', 'Gender')}:</span>
+                <span className="text-gray-700 dark:text-gray-300">{profile.gender}</span>
+              </div>
+            )}
+            
+            {profile.relationship_goal && (
+              <div className="flex">
+                <span className="font-medium w-32">{t('profile.goal', 'Looking for')}:</span>
+                <span className="text-gray-700 dark:text-gray-300">{profile.relationship_goal}</span>
+              </div>
+            )}
+            
+            {profile.religion && profile.religion !== 'none' && (
+              <div className="flex">
+                <span className="font-medium w-32">{t('profile.religion', 'Religion')}:</span>
+                <span className="text-gray-700 dark:text-gray-300">{profile.religion}</span>
+              </div>
+            )}
+            
+            {profile.ethnicity && profile.ethnicity !== 'none' && (
+              <div className="flex">
+                <span className="font-medium w-32">{t('profile.ethnicity', 'Ethnicity')}:</span>
+                <span className="text-gray-700 dark:text-gray-300">{profile.ethnicity}</span>
+              </div>
+            )}
+            
+            {profile.height && (
+              <div className="flex">
+                <span className="font-medium w-32">{t('profile.height', 'Height')}:</span>
+                <span className="text-gray-700 dark:text-gray-300">{profile.height} cm</span>
+              </div>
+            )}
+          </div>
+          
+          {/* Interests Tags */}
+          {profile.interests && profile.interests.length > 0 && (
+            <div className="mt-4">
+              <span className="font-medium block mb-2">{t('profile.interests', 'Interests')}:</span>
+              <div className="flex flex-wrap gap-2">
+                {profile.interests.map((interest, index) => (
+                  <span 
+                    key={index} 
+                    className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm"
+                  >
+                    {interest}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      
+      <div className="flex justify-between mb-8">
         <button 
           onClick={() => setLocation('/onboarding')}
           className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark transition"
         >
           {t('profile.edit', 'Edit Profile')}
+        </button>
+        
+        <button 
+          onClick={() => setLocation('/criteria')}
+          className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white px-6 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+        >
+          {t('profile.editCriteria', 'Edit Match Criteria')}
         </button>
       </div>
     </div>
