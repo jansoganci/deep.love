@@ -4,7 +4,6 @@ import { useLocation } from 'wouter';
 import SwipeDeck from '../components/SwipeDeck';
 import FreemiumBanner from '../components/FreemiumBanner';
 import BannerAdPlaceholder from '../components/BannerAdPlaceholder';
-import GenerateFakeProfiles from '../components/GenerateFakeProfiles';
 import { getMatches } from '../services/matchEngine';
 import { loadUserCriteria, loadUserProfile, saveUserCriteria } from '../services/storage';
 import { useSwipeLimit } from '../hooks/useSwipeLimit';
@@ -25,8 +24,11 @@ const MatchesScreen = () => {
   const [matchedProfile, setMatchedProfile] = useState<Profile | null>(null);
   const [currentUser, setCurrentUser] = useState<{id: string} | null>(null);
   
-  // Load matches and check swipe limit on mount
+  // Load matches and check swipe limit on mount - only once
   useEffect(() => {
+    // Track if component is mounted to prevent state updates after unmount
+    let isMounted = true;
+    
     async function initializeScreen() {
       try {
         // Reset swipes if it's a new day
@@ -125,18 +127,27 @@ const MatchesScreen = () => {
           return;
         }
         
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       } catch (error: any) {
-        toast({
-          title: "Error",
-          description: error.message || "Failed to initialize matches",
-          variant: "destructive"
-        });
-        setLoading(false);
+        if (isMounted) {
+          toast({
+            title: "Error",
+            description: error.message || "Failed to initialize matches",
+            variant: "destructive"
+          });
+          setLoading(false);
+        }
       }
     }
     
     initializeScreen();
+    
+    // Cleanup function to avoid state updates after unmount
+    return () => {
+      isMounted = false;
+    };
   }, [setLocation, resetMidnight, swipesLeft, isPro, toast]);
   
   // Function to show the match modal
@@ -354,9 +365,6 @@ const MatchesScreen = () => {
           </div>
         </div>
       )}
-      
-      {/* Generator button for development/testing */}
-      <GenerateFakeProfiles />
     </div>
   );
 };
