@@ -4,3 +4,16 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Environment variables (but allow .env.example)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Database files (SQLite databases contain sensitive user data)
+data/
+*.sqlite
+*.sqlite3
+*.db

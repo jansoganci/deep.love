@@ -5,6 +5,14 @@ import { setupVite, serveStatic, log } from "./vite";
 import { seedInitialData } from "./database";
 import SQLiteStoreFactory from "connect-sqlite3";
 
+// Validate required environment variables
+if (!process.env.SESSION_SECRET) {
+  console.error("❌ SESSION_SECRET environment variable is required!");
+  console.error("💡 Please set SESSION_SECRET in your .env file or environment");
+  console.error("💡 Example: SESSION_SECRET=your-super-secret-session-key-here");
+  process.exit(1);
+}
+
 // Create SQLite session store
 const SQLiteStore = SQLiteStoreFactory({ session });
 
@@ -19,7 +27,7 @@ app.use(session({
     dir: process.cwd(),
     table: 'sessions'
   }),
-  secret: process.env.SESSION_SECRET || 'deep-love-secret-key',
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: { 
