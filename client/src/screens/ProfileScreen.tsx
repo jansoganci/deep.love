@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { useTranslation } from 'react-i18next';
-import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/use-toast';
 import ProfileCompletionBar from '../components/ProfileCompletionBar';
+import * as api from '../services/api'; // Migrated from Supabase to custom backend
 
 interface UserProfile {
   id: string;
@@ -48,46 +48,33 @@ const ProfileScreen = () => {
       }
 
       try {
-        // Fetch the user's profile from Supabase
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, display_name, avatar_url, age, bio')
-          .eq('id', user.id)
-          .single();
+        // Fetch the user's profile from our backend
+        const profileData = await api.getProfile(user.id);
           
         if (isMounted) {
-          if (error) {
-            if (error.code === 'PGRST116') { // Not found
-              // Redirect to onboarding if profile doesn't exist
-              toast({
-                title: "Profile Not Found",
-                description: "Let's create your profile first",
-              });
-              setLocation('/onboarding');
-              return;
-            } else {
-              console.error("Error fetching profile:", error);
-              toast({
-                title: "Error",
-                description: "Failed to load your profile. Please try again.",
-                variant: "destructive"
-              });
-            }
-          } else if (data) {
-            setProfile(data);
+          setProfile(profileData);
+          setLoading(false);
+        }
+      } catch (error: any) {
+        if (isMounted) {
+          if (error.message?.includes('404')) { // Not found
+            // Redirect to onboarding if profile doesn't exist
+            toast({
+              title: "Profile Not Found",
+              description: "Let's create your profile first",
+            });
+            setLocation('/onboarding');
+            return;
+          } else {
+            console.error("Error fetching profile:", error);
+            toast({
+              title: "Error",
+              description: "Failed to load your profile. Please try again.",
+              variant: "destructive"
+            });
           }
           
           setLoading(false);
-        }
-      } catch (error) {
-        if (isMounted) {
-          console.error("Error in fetchUserProfile:", error);
-          setLoading(false);
-          toast({
-            title: "Error",
-            description: "Something went wrong. Please try again.",
-            variant: "destructive"
-          });
         }
       }
     }
@@ -178,26 +165,20 @@ const ProfileScreen = () => {
               <span className="text-primary text-lg">📸</span>
             </div>
             <div>
-              <p className="font-medium">{t('profile.addPhotos', 'Add Better Photos')}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">{t('profile.addPhotosDesc', 'Clear photos of yourself increase your chances of matching')}</p>
+              <p className="font-medium">{t('profile.addPhotos', 'Add More Photos')}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{t('profile.addPhotosDesc', 'Show your personality with multiple photos')}</p>
             </div>
           </div>
         </div>
       </div>
       
-      <div className="flex justify-between mb-8">
-        <button 
+      {/* Edit Profile Button */}
+      <div className="flex justify-center mb-6">
+        <button
           onClick={() => setLocation('/onboarding')}
-          className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark transition"
+          className="bg-primary text-white px-8 py-3 rounded-lg font-medium hover:bg-primary-dark transition"
         >
-          {t('profile.edit', 'Edit Profile')}
-        </button>
-        
-        <button 
-          onClick={() => setLocation('/criteria')}
-          className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white px-6 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition"
-        >
-          {t('profile.editCriteria', 'Edit Match Criteria')}
+          {t('profile.editProfile', 'Edit Profile')}
         </button>
       </div>
     </div>

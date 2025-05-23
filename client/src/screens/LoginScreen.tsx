@@ -3,50 +3,16 @@ import { useTranslation } from 'react-i18next';
 import { useLocation } from 'wouter';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/use-toast';
-import { supabase } from '../services/supabase';
 
 const LoginScreen = () => {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
-  const { signIn } = useAuth();
+  const { login } = useAuth();
   const { toast } = useToast();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Check if user has a profile and redirect accordingly
-  const checkProfileAndRedirect = async (userId: string) => {
-    try {
-      // Query the profiles table to see if user has a profile
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', userId)
-        .single();
-      
-      if (error) {
-        // If no profile exists, redirect to onboarding
-        if (error.code === 'PGRST116') {
-          setLocation('/onboarding');
-        } else {
-          throw error;
-        }
-      } else if (data) {
-        // Profile exists - redirect to criteria or matches
-        const hasCriteria = localStorage.getItem('deepLove_criteria');
-        if (hasCriteria) {
-          setLocation('/matches');
-        } else {
-          setLocation('/criteria');
-        }
-      }
-    } catch (error) {
-      console.error('Error checking profile:', error);
-      // Default to onboarding on error to ensure user completes profile
-      setLocation('/onboarding');
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,21 +28,10 @@ const LoginScreen = () => {
     
     try {
       setIsSubmitting(true);
-      const { error, data } = await signIn(email, password);
+      await login(email, password);
       
-      if (error) {
-        throw error;
-      }
-      
-      toast({
-        title: t('auth.success'),
-        description: t('auth.successLogin'),
-      });
-      
-      // After successful login, check profile status and redirect
-      if (data?.user) {
-        await checkProfileAndRedirect(data.user.id);
-      }
+      // After successful login, redirect to home (swipe screen)
+      setLocation('/home');
     } catch (error: any) {
       toast({
         title: t('auth.error'),

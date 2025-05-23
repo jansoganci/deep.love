@@ -7,7 +7,7 @@ import { useToast } from '../hooks/use-toast';
 const SignupScreen = () => {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
-  const { signUp } = useAuth();
+  const { signup } = useAuth();
   const { toast } = useToast();
   
   const [email, setEmail] = useState('');
@@ -47,26 +47,9 @@ const SignupScreen = () => {
     
     try {
       setIsSubmitting(true);
-      const { error, data } = await signUp(email, password);
-      
-      if (error) {
-        throw error;
-      }
-      
-      toast({
-        title: t('auth.success'),
-        description: t('auth.successSignup'),
-      });
-      
-      // For new signups, always redirect to onboarding since they won't have a profile
+      await signup(email, password);
+      // After successful signup, redirect to onboarding
       setLocation('/onboarding');
-      
-      // Note: Some Supabase configurations require email verification before a user 
-      // is fully registered. In those cases we might want to show a "please verify email" screen
-      // instead of immediately redirecting to onboarding.
-      // if (data?.user?.identities && data.user.identities.length === 0) {
-      //   setLocation('/verify-email');
-      // }
     } catch (error: any) {
       toast({
         title: t('auth.error'),

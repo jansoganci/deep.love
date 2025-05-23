@@ -1,129 +1,148 @@
 import { UserCriteria, Profile } from '../types';
-import { supabase } from './supabase';
+import { getMatches as apiGetMatches } from './api'; // Migrated from Supabase to custom backend
+import { MATCH_SCORING, API_DEFAULTS, FALLBACKS } from '../constants/appConstants';
 
-// Calculate match percentage based on criteria
+/**
+ * Calculate match percentage based on criteria
+ * @param profile The candidate profile
+ * @param criteria User's matching criteria
+ * @returns Match percentage score
+ */
 function calculateMatchPercentage(profile: Profile, criteria: UserCriteria): number {
   let score = 0;
-  const totalPoints = 100;
   
-  // Age match (20% of score)
-  const agePoints = 20;
-  const [minAge, maxAge] = criteria.ageRange;
-  if (profile.age >= minAge && profile.age <= maxAge) {
-    // Full points if age is in range
-    score += agePoints;
-  } else {
-    // Partial points based on how close to range
-    const ageDiff = profile.age < minAge ? minAge - profile.age : profile.age - maxAge;
-    const ageScore = Math.max(0, agePoints - (ageDiff * 5));
-    score += ageScore;
+  try {
+    // Age match
+    const agePoints = MATCH_SCORING.AGE_WEIGHT;
+    const [minAge, maxAge] = criteria.ageRange;
+    const profileAge = profile.age || 25; // Default age if undefined
+    if (profileAge >= minAge && profileAge <= maxAge) {
+      // Full points if age is in range
+      score += agePoints;
+    } else {
+      // Partial points based on how close to range
+      const ageDiff = profileAge < minAge ? minAge - profileAge : profileAge - maxAge;
+      const ageScore = Math.max(0, agePoints - (ageDiff * 5));
+      score += ageScore;
+    }
+    
+    // Hobbies/interests match
+    const hobbyPoints = MATCH_SCORING.HOBBIES_WEIGHT;
+    const profileInterests = profile.interests || FALLBACKS.DEFAULT_INTERESTS;
+    const matchingInterests = profileInterests.filter(interest => 
+      criteria.hobbies.includes(interest)
+    );
+    const interestScore = matchingInterests.length > 0 
+      ? (matchingInterests.length / Math.max(criteria.hobbies.length, 1)) * hobbyPoints 
+      : 0;
+    score += interestScore;
+    
+    // Relationship goal match
+    const goalPoints = MATCH_SCORING.RELATIONSHIP_GOAL_WEIGHT;
+    if (profile.relationshipGoal === criteria.relationshipGoal) {
+      score += goalPoints;
+    }
+    
+    // Gender preference match
+    const genderPoints = MATCH_SCORING.GENDER_PREFERENCE_WEIGHT;
+    if (criteria.genderPreference === 'any' || 
+        criteria.genderPreference === profile.gender) {
+      score += genderPoints;
+    }
+    
+    // Religion match
+    const religionPoints = MATCH_SCORING.RELIGION_WEIGHT;
+    if (criteria.religion === 'none' || 
+        criteria.religion === profile.religion) {
+      score += religionPoints;
+    }
+    
+    // Ethnicity match
+    const ethnicityPoints = MATCH_SCORING.ETHNICITY_WEIGHT;
+    if (criteria.ethnicity === 'none' || 
+        criteria.ethnicity === profile.ethnicity) {
+      score += ethnicityPoints;
+    }
+    
+    // Add a bit of randomness to make it more realistic
+    const randomFactor = Math.floor(
+      Math.random() * (MATCH_SCORING.RANDOM_FACTOR_MAX - MATCH_SCORING.RANDOM_FACTOR_MIN + 1)
+    ) + MATCH_SCORING.RANDOM_FACTOR_MIN;
+    
+    score = Math.min(
+      MATCH_SCORING.MAX_MATCH_SCORE, 
+      Math.max(MATCH_SCORING.MIN_MATCH_SCORE, score + randomFactor)
+    );
+    
+    return Math.round(score);
+  } catch (error) {
+    console.error("Error calculating match percentage:", error);
+    // Return a default value in case of error
+    return MATCH_SCORING.MIN_MATCH_SCORE;
   }
-  
-  // Hobbies/interests match (30% of score)
-  const hobbyPoints = 30;
-  const matchingInterests = profile.interests.filter(interest => 
-    criteria.hobbies.includes(interest)
-  );
-  const interestScore = matchingInterests.length > 0 
-    ? (matchingInterests.length / Math.max(criteria.hobbies.length, 1)) * hobbyPoints 
-    : 0;
-  score += interestScore;
-  
-  // Relationship goal match (15% of score)
-  const goalPoints = 15;
-  if (profile.relationshipGoal === criteria.relationshipGoal) {
-    score += goalPoints;
-  }
-  
-  // Gender preference match (15% of score)
-  const genderPoints = 15;
-  if (criteria.genderPreference === 'any' || 
-      criteria.genderPreference === profile.gender) {
-    score += genderPoints;
-  }
-  
-  // Religion match (10% of score)
-  const religionPoints = 10;
-  if (criteria.religion === 'none' || 
-      criteria.religion === profile.religion) {
-    score += religionPoints;
-  }
-  
-  // Ethnicity match (10% of score)
-  const ethnicityPoints = 10;
-  if (criteria.ethnicity === 'none' || 
-      criteria.ethnicity === profile.ethnicity) {
-    score += ethnicityPoints;
-  }
-  
-  // Add a bit of randomness to make it more realistic
-  const randomFactor = Math.floor(Math.random() * 10) - 5; // -5 to +5
-  score = Math.min(99, Math.max(50, score + randomFactor)); // Ensure score is between 50-99
-  
-  return Math.round(score);
 }
 
-// Convert a Supabase profile to our app's Profile format
-function convertSupabaseProfile(profile: any): Profile {
+/**
+ * Convert a backend profile to our app's Profile format
+ * @param profile Raw profile data from backend
+ * @returns Formatted Profile object
+ */
+function convertBackendProfile(profile: any): Profile {
+  if (!profile) {
+    throw new Error("Invalid profile data");
+  }
+  
   return {
     id: profile.id,
     name: profile.display_name,
     age: profile.age,
-    occupation: profile.occupation || 'Unknown',
-    bio: profile.bio,
+    occupation: profile.occupation || API_DEFAULTS.DEFAULT_OCCUPATION,
+    bio: profile.bio || "",
     photo: profile.avatar_url,
-    interests: profile.interests || [],
-    relationshipGoal: profile.relationship_goal || 'casual',
+    interests: profile.interests || FALLBACKS.DEFAULT_EMPTY_ARRAY,
+    relationshipGoal: profile.relationship_goal || API_DEFAULTS.DEFAULT_RELATIONSHIP_GOAL,
     gender: profile.gender,
-    religion: profile.religion || 'none',
-    ethnicity: profile.ethnicity || 'none',
+    religion: profile.religion || API_DEFAULTS.DEFAULT_RELIGION,
+    ethnicity: profile.ethnicity || API_DEFAULTS.DEFAULT_ETHNICITY,
     height: profile.height,
     matchPercentage: 0 // Will be set later
   };
 }
 
-// Get matches based on user criteria
+/**
+ * Get matches based on user criteria
+ * @param criteria The user's matching criteria
+ * @returns Array of matching profiles
+ */
 export async function getMatches(criteria: UserCriteria): Promise<Profile[]> {
   try {
-    // Get the current user's ID to exclude them from the matches
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      console.error("No authenticated user found");
-      return [];
+    // Validate criteria
+    if (!criteria) {
+      console.error("No matching criteria provided");
+      return FALLBACKS.DEFAULT_EMPTY_ARRAY;
     }
     
-    // Fetch profiles from Supabase
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .neq('id', user.id) // Exclude the current user
-      .limit(50);
-      
-    if (error) {
-      console.error("Error fetching profiles:", error);
-      return [];
-    }
+    // Fetch profiles from API
+    const profiles = await apiGetMatches(API_DEFAULTS.DEFAULT_PROFILE_LIMIT);
     
-    if (!data || data.length === 0) {
+    if (!profiles || profiles.length === 0) {
       console.log("No profiles found in database");
-      return [];
+      return FALLBACKS.DEFAULT_EMPTY_ARRAY;
     }
     
-    console.log(`Found ${data.length} profiles in database`);
-    
-    // Convert Supabase profiles to our app's Profile format
-    const profiles = data.map(convertSupabaseProfile);
+    // console.log(`Found ${profiles.length} profiles in database`);
     
     // Calculate match percentage for each profile
-    const matchesWithScores = profiles.map(profile => ({
+    const matchesWithScores = profiles.map((profile: Profile) => ({
       ...profile,
       matchPercentage: calculateMatchPercentage(profile, criteria)
     }));
     
     // Sort by match percentage (descending)
-    return matchesWithScores.sort((a, b) => b.matchPercentage - a.matchPercentage);
-  } catch (error) {
+    return matchesWithScores.sort((a: Profile, b: Profile) => b.matchPercentage! - a.matchPercentage!);
+  } catch (error: any) {
     console.error("Error in getMatches:", error);
-    return [];
+    // Return a more helpful error message to the caller
+    throw new Error(`Failed to get matches: ${error.message}`);
   }
 }

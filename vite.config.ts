@@ -24,6 +24,25 @@ export default defineConfig({
     },
   },
   root: path.resolve(import.meta.dirname, "client"),
+  server: {
+    port: 5173,
+    host: true, // Tüm network interface'lere bağlan
+    proxy: {
+      "/api": {
+        target: "http://localhost:5001",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+    hmr: {
+      port: 5174, // HMR için ayrı port
+      host: 'localhost', // HMR host'u açıkça belirt
+    },
+    // WebSocket fallback ayarları
+    watch: {
+      usePolling: false,
+    },
+  },
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,

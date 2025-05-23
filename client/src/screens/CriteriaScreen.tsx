@@ -3,8 +3,9 @@ import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { UserCriteria } from "../types";
 import { saveUserCriteria } from "../services/storage";
-import { supabase } from "../services/supabase";
 import { useToast } from "../hooks/use-toast";
+import { useAuth } from "../contexts/AuthContext";
+import * as api from "../services/api"; // Migrated from Supabase to custom backend
 
 const HOBBIES = [
   "Cooking",
@@ -25,6 +26,7 @@ const CriteriaScreen = () => {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
 
   const [ageRange, setAgeRange] = useState<[number, number]>([18, 40]);
@@ -41,73 +43,62 @@ const CriteriaScreen = () => {
   // Check if user already has criteria saved
   useEffect(() => {
     async function checkExistingCriteria() {
+      if (!user) {
+        setLocation('/login');
+        return;
+      }
+
       try {
         setLoading(true);
         
-        // Get the current authenticated user
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          console.error("No authenticated user found");
-          setLocation('/login');
-          return;
-        }
-        
         // Check if user already has criteria saved
-        const { data, error } = await supabase
-          .from('criteria')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
-          
-        if (error) {
-          if (error.code !== 'PGRST116') { // PGRST116 means no results found
-            console.error("Error fetching criteria:", error);
-            toast({
-              title: "Error",
-              description: "Failed to load your preferences. Please try again.",
-              variant: "destructive"
-            });
-          }
-          // No criteria found, show the form
-          setLoading(false);
-          return;
-        }
+        const existingCriteria = await api.getCriteria();
         
-        if (data) {
-          console.log("Found existing criteria:", data);
+        if (existingCriteria) {
+          console.log("Found existing criteria:", existingCriteria);
           
           // User already has criteria saved, skip to matches screen
           // But first, save to local storage for backward compatibility
           const userCriteria: UserCriteria = {
-            ageRange: [data.age_min, data.age_max],
-            hobbies: data.hobbies || [],
-            relationshipGoal: data.relationship_goal,
-            genderPreference: data.gender || "any",
-            distanceRadius: data.distance_km || 50,
-            education: data.education || "",
-            occupation: data.occupation || "",
-            religion: data.religion || "none",
-            ethnicity: data.ethnicity || "none",
-            height: data.height_cm
+            ageRange: [existingCriteria.age_min, existingCriteria.age_max],
+            hobbies: existingCriteria.hobbies || [],
+            relationshipGoal: existingCriteria.relationship_goal,
+            genderPreference: existingCriteria.gender || "any",
+            distanceRadius: existingCriteria.distance_km || 50,
+            education: existingCriteria.education || "",
+            occupation: existingCriteria.occupation || "",
+            religion: existingCriteria.religion || "none",
+            ethnicity: existingCriteria.ethnicity || "none",
+            height: existingCriteria.height_cm
           };
           
           saveUserCriteria(userCriteria);
           
-          // Redirect to matches screen
-          setLocation('/matches');
+          // Redirect to home screen (swipe interface)
+          setLocation('/home');
           return;
         }
         
         setLoading(false);
-      } catch (error) {
+      } catch (error: any) {
+        // If criteria not found (404), show the form
+        if (error.message?.includes('404')) {
+          setLoading(false);
+          return;
+        }
+        
         console.error("Error checking existing criteria:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load your preferences. Please try again.",
+          variant: "destructive"
+        });
         setLoading(false);
       }
     }
     
     checkExistingCriteria();
-  }, [setLocation, toast]);
+  }, [user, setLocation, toast]);
 
   const handleMinAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const minAge = parseInt(e.target.value, 10);
@@ -152,26 +143,21 @@ const CriteriaScreen = () => {
       return;
     }
 
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You need to be logged in to save preferences",
+        variant: "destructive"
+      });
+      setLocation('/login');
+      return;
+    }
+
     try {
       setLoading(true);
       
-      // Get the current authenticated user
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        console.error("No authenticated user found");
-        toast({
-          title: "Authentication Required",
-          description: "You need to be logged in to save preferences",
-          variant: "destructive"
-        });
-        setLocation('/login');
-        return;
-      }
-      
-      // Create criteria object for Supabase
+      // Create criteria object for our backend
       const criteriaData = {
-        user_id: user.id,
         age_min: ageRange[0],
         age_max: ageRange[1],
         gender: genderPreference,
@@ -183,31 +169,17 @@ const CriteriaScreen = () => {
         hobbies: selectedHobbies,
         relationship_goal: selectedGoal,
         height_cm: height ? parseInt(height, 10) : null,
-        updated_at: new Date().toISOString()
       };
       
-      // Save to Supabase (upsert - insert if not exists, update if exists)
-      const { error } = await supabase
-        .from('criteria')
-        .upsert(criteriaData);
-      
-      if (error) {
-        console.error("Error saving criteria:", error);
-        toast({
-          title: "Error",
-          description: "Failed to save your preferences. Please try again.",
-          variant: "destructive"
-        });
-        setLoading(false);
-        return;
-      }
+      // Save to our backend
+      await api.saveCriteria(criteriaData);
       
       // Also save to local storage for backward compatibility
       const userCriteria: UserCriteria = {
         ageRange,
         hobbies: selectedHobbies,
-        relationshipGoal: selectedGoal,
-        genderPreference,
+        relationshipGoal: selectedGoal as 'casual' | 'longTerm' | 'marriage' | 'friendship',
+        genderPreference: genderPreference as 'male' | 'female' | 'non-binary' | 'any',
         distanceRadius,
         education,
         occupation,
@@ -223,13 +195,13 @@ const CriteriaScreen = () => {
         description: "Your criteria have been saved successfully!"
       });
       
-      // Navigate to matches screen
-      setLocation("/matches");
-    } catch (error) {
+      // Navigate to home screen (swipe interface)
+      setLocation("/home");
+    } catch (error: any) {
       console.error("Error in handleSubmit:", error);
       toast({
         title: "Error",
-        description: "Something went wrong. Please try again.",
+        description: error.message || "Failed to save your preferences. Please try again.",
         variant: "destructive"
       });
       setLoading(false);
@@ -432,9 +404,10 @@ const CriteriaScreen = () => {
 
         <button
           type="submit"
-          className="w-full bg-primary text-white py-3 rounded-lg hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition font-medium"
+          disabled={loading}
+          className="w-full bg-primary text-white py-3 rounded-lg hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {t("criteria.findMatches")}
+          {loading ? "Saving..." : t("criteria.findMatches")}
         </button>
       </form>
     </div>

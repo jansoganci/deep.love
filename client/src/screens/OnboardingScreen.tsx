@@ -1,14 +1,14 @@
 import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'wouter';
-import { UserProfile } from '../types';
-import { saveUserProfile } from '../services/storage';
-import { supabase, uploadAvatar } from '../services/supabase';
+import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/use-toast';
+import * as api from '../services/api';
 
 const OnboardingScreen = () => {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
+  const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -72,61 +72,46 @@ const OnboardingScreen = () => {
       return;
     }
 
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You need to be logged in to create a profile",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       
-      // Get the current user from Supabase
-      const { data: { user } } = await supabase.auth.getUser();
+      // For now, we'll use the base64 data URL as the avatar URL
+      // In the future, we can implement a proper file upload endpoint
+      const avatarUrl = photoPreview;
       
-      if (!user) {
-        toast({
-          title: "Error",
-          description: "You need to be logged in to create a profile",
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      // Upload avatar to Supabase storage
-      const avatarUrl = await uploadAvatar(photoFile, user.id);
-      
-      // Create user profile in Supabase with additional fields
-      const { error } = await supabase.from('profiles').upsert({
-        id: user.id,
-        display_name: name.trim(),
-        avatar_url: avatarUrl,
-        age: ageNum,
-        bio: bio.trim(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      });
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Create user profile object for local storage
-      const userProfile: UserProfile = {
+      // Create/update user profile using our backend API
+      const profileData = {
         name: name.trim(),
+        photo: avatarUrl,
         age: ageNum,
         bio: bio.trim(),
-        photo: photoPreview, // We'll keep using the data URL for local display
+        occupation: '', // Will be filled later
+        interests: [], // Will be filled later
+        relationshipGoal: 'casual', // Default value
+        gender: '', // Will be filled later
+        religion: 'none', // Default value
+        ethnicity: 'none', // Default value
+        height: null // Will be filled later
       };
       
-      // Save to local storage for client-side access
-      saveUserProfile(userProfile);
+      await api.updateProfile(user.id, profileData);
       
       toast({
         title: "Success",
         description: "Profile created successfully"
       });
       
-      // Ensure navigation happens after state updates are processed
-      // Using setTimeout to push this to the next event loop tick
-      setTimeout(() => {
-        console.log('Redirecting to criteria page...');
-        setLocation('/criteria');
-      }, 100);
+      // Redirect to criteria page
+      setLocation('/criteria');
     } catch (error: any) {
       toast({
         title: "Error",
@@ -237,7 +222,7 @@ const OnboardingScreen = () => {
             <span className="flex items-center justify-center">
               <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 0014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
               {t('common.loading')}
             </span>

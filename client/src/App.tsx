@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import OnboardingScreen from "./screens/OnboardingScreen";
 import CriteriaScreen from "./screens/CriteriaScreen";
 import MatchesScreen from "./screens/MatchesScreen";
+import HomeScreen from "./screens/HomeScreen";
 import ProfileScreen from "./screens/ProfileScreen";
 import PaywallScreen from "./screens/PaywallScreen";
 import LoginScreen from "./screens/LoginScreen";
@@ -42,6 +43,11 @@ const AppRoutes = () => {
       <Route path="/onboarding">
         <PrivateRoute>
           <OnboardingScreen />
+        </PrivateRoute>
+      </Route>
+      <Route path="/home">
+        <PrivateRoute>
+          <HomeScreen />
         </PrivateRoute>
       </Route>
       <Route path="/criteria">
@@ -87,7 +93,7 @@ function App() {
               <div className="min-h-screen flex flex-col">
                 <Header />
                 <main className="flex-1">
-                  <div className="max-w-5xl mx-auto px-4 py-6 pb-20">
+                  <div className="max-w-5xl mx-auto px-4 py-6 pb-20 md:pb-6">
                     <AppRoutes />
                   </div>
                 </main>

@@ -1,383 +1,277 @@
 import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useLocation } from 'wouter';
-import SwipeDeck from '../components/SwipeDeck';
-import FreemiumBanner from '../components/FreemiumBanner';
-import BannerAdPlaceholder from '../components/BannerAdPlaceholder';
-import { getMatches } from '../services/matchEngine';
-import { loadUserCriteria, loadUserProfile, saveUserCriteria } from '../services/storage';
-import { useSwipeLimit } from '../hooks/useSwipeLimit';
-import { useEntitlement } from '../hooks/useEntitlement';
-import { supabase, recordSwipe } from '../services/supabase';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../hooks/use-toast';
-import { Profile, UserCriteria } from '../types';
+import * as api from '../services/api'; // Migrated from Supabase to custom backend
+import { Match, Profile } from '../types';
 
 const MatchesScreen = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [, setLocation] = useLocation();
-  const [matches, setMatches] = useState<Profile[]>([]);
-  const { swipesLeft, registerSwipe, resetMidnight } = useSwipeLimit();
-  const { isPro } = useEntitlement();
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const [showMatchModal, setShowMatchModal] = useState(false);
-  const [matchedProfile, setMatchedProfile] = useState<Profile | null>(null);
-  const [currentUser, setCurrentUser] = useState<{id: string} | null>(null);
   
-  // Load matches and check swipe limit on mount - only once
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [newMessage, setNewMessage] = useState('');
+
   useEffect(() => {
-    // Track if component is mounted to prevent state updates after unmount
-    let isMounted = true;
-    let lastFetchTime = 0;
-    let fetchInterval: NodeJS.Timeout | null = null;
-    
-    async function initializeScreen() {
+    async function loadMatches() {
+      if (!user) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in to view your matches",
+          variant: "destructive"
+        });
+        setLocation('/login');
+        return;
+      }
+
       try {
-        // Reset swipes if it's a new day
-        resetMidnight();
+        // For now, we'll simulate matches since we don't have a matches API endpoint yet
+        // In a real implementation, you would call: const userMatches = await api.getMatches();
         
-        // Get the current authenticated user
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        // Must have authenticated user to continue
-        if (!user) {
-          toast({
-            title: "Authentication Required",
-            description: "You need to be logged in to view matches",
-            variant: "destructive"
-          });
-          setLocation('/login');
-          return;
-        }
-        
-        setCurrentUser({ id: user.id });
-        console.log("Current user ID:", user.id);
-        
-        // Try to load criteria from Supabase first
-        let userCriteria: UserCriteria | null = null;
-        
-        const { data: criteriaData, error: criteriaError } = await supabase
-          .from('criteria')
-          .select('*')
-          .eq('user_id', user.id)
-          .single();
-          
-        if (criteriaError) {
-          if (criteriaError.code !== 'PGRST116') { // PGRST116 means no results found
-            console.error("Error fetching criteria:", criteriaError);
-            toast({
-              title: "Error",
-              description: "Failed to load your preferences. Checking local storage as fallback.",
-            });
+        // Simulate some matches for demo purposes
+        const mockMatches: Match[] = [
+          {
+            id: '1',
+            userId: user.id,
+            matchedUserId: 'user1',
+            createdAt: new Date().toISOString(),
+            profile: {
+              id: 'user1',
+              name: 'Emma Wilson',
+              photo: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=500',
+              age: 27,
+              bio: 'Love hiking and photography',
+              occupation: 'Graphic Designer'
+            }
+          },
+          {
+            id: '2',
+            userId: user.id,
+            matchedUserId: 'user2',
+            createdAt: new Date().toISOString(),
+            profile: {
+              id: 'user2',
+              name: 'Lucas Brown',
+              photo: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&h=500',
+              age: 30,
+              bio: 'Musician and teacher',
+              occupation: 'Music Teacher'
+            }
           }
-          
-          // Fallback to local storage
-          userCriteria = loadUserCriteria();
-        } else if (criteriaData) {
-          // Convert from Supabase format to our app format
-          const convertedCriteria: UserCriteria = {
-            ageRange: [criteriaData.age_min, criteriaData.age_max] as [number, number],
-            hobbies: criteriaData.hobbies || [],
-            relationshipGoal: criteriaData.relationship_goal,
-            genderPreference: criteriaData.gender || "any",
-            distanceRadius: criteriaData.distance_km || 50,
-            education: criteriaData.education || "",
-            occupation: criteriaData.occupation || "",
-            religion: criteriaData.religion || "none",
-            ethnicity: criteriaData.ethnicity || "none",
-            height: criteriaData.height_cm
-          };
-          
-          userCriteria = convertedCriteria;
-          
-          // Save to local storage for compatibility
-          saveUserCriteria(userCriteria);
-        } else {
-          // Fallback to local storage
-          userCriteria = loadUserCriteria();
-        }
+        ];
         
-        // Check if we have criteria from either source
-        if (!userCriteria) {
-          // Redirect to criteria screen if no criteria is found
-          toast({
-            title: "Matching Criteria Needed",
-            description: "Please set your matching preferences first",
-          });
-          setLocation('/criteria');
-          return;
-        }
-        
-        // Check if user has a profile
-        const userProfile = loadUserProfile();
-        
-        // Get matches based on criteria from Supabase
-        const potentialMatches = await getMatches(userCriteria);
-        
-        // Only show toast for empty results once, not repeatedly
-        if (potentialMatches.length === 0 && lastFetchTime === 0) {
-          toast({
-            title: "No Matches Found",
-            description: "Try broadening your criteria or check back later for more profiles",
-          });
-        }
-        
-        setMatches(potentialMatches);
-        lastFetchTime = Date.now();
-        
-        // Redirect to paywall if already out of swipes
-        if (swipesLeft <= 0 && !isPro) {
-          setLocation('/paywall');
-          return;
-        }
-        
-        if (isMounted) {
-          setLoading(false);
-        }
+        setMatches(mockMatches);
+        setLoading(false);
       } catch (error: any) {
-        if (isMounted) {
-          toast({
-            title: "Error",
-            description: error.message || "Failed to initialize matches",
-            variant: "destructive"
-          });
-          setLoading(false);
-        }
+        toast({
+          title: "Error",
+          description: error.message || "Failed to load matches",
+          variant: "destructive"
+        });
+        setLoading(false);
       }
     }
     
-    // Initial load
-    initializeScreen();
-    
-    // Set up refresh interval (30 seconds)
-    fetchInterval = setInterval(() => {
-      if (Date.now() - lastFetchTime >= 30000) { // Only refresh if 30s have passed
-        initializeScreen();
+    loadMatches();
+  }, [user, setLocation, toast]);
+
+  const handleMatchSelect = (match: Match) => {
+    setSelectedMatch(match);
+    // Load messages for this match
+    // In a real implementation: loadMessages(match.id);
+    setMessages([
+      {
+        id: '1',
+        userId: match.matchedUserId,
+        message: 'Hey! Nice to meet you 😊',
+        createdAt: new Date(Date.now() - 3600000).toISOString()
+      },
+      {
+        id: '2',
+        userId: user?.id,
+        message: 'Hi! Great to match with you too!',
+        createdAt: new Date(Date.now() - 1800000).toISOString()
       }
-    }, 30000);
-    
-    // Cleanup function to avoid state updates after unmount
-    return () => {
-      isMounted = false;
-      if (fetchInterval) {
-        clearInterval(fetchInterval);
-      }
-    };
-  }, [setLocation, resetMidnight, swipesLeft, isPro, toast]);
-  
-  // Function to show the match modal
-  const showMatchPopup = (profile: Profile) => {
-    setMatchedProfile(profile);
-    setShowMatchModal(true);
+    ]);
   };
 
-  // Handle swiping left (dislike)
-  const handleSwipeLeft = async (profileId: string) => {
-    if (!currentUser) {
-      toast({
-        title: "Error",
-        description: "User not initialized",
-        variant: "destructive"
-      });
-      return;
-    }
-    
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !selectedMatch) return;
+
     try {
-      // Record the swipe in Supabase
-      await recordSwipe(currentUser.id, profileId, 'left');
+      // In a real implementation: await api.sendMessage(selectedMatch.id, newMessage);
       
-      // Pro users have unlimited swipes, only count for free users
-      if (!isPro) {
-        // Register the swipe action for the limit counter
-        registerSwipe();
-        
-        // Navigate to paywall if no swipes remaining
-        if (swipesLeft <= 1) { // Check if this swipe will deplete remaining swipes
-          setLocation('/paywall');
-        }
-      }
+      const newMsg = {
+        id: Date.now().toString(),
+        userId: user?.id,
+        message: newMessage.trim(),
+        createdAt: new Date().toISOString()
+      };
       
-      // Remove the profile from the deck
-      setMatches(prev => prev.filter(p => p.id !== profileId));
+      setMessages(prev => [...prev, newMsg]);
+      setNewMessage('');
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to record swipe",
+        description: "Failed to send message",
         variant: "destructive"
       });
     }
   };
-  
-  // Handle swiping right (like)
-  const handleSwipeRight = async (profileId: string) => {
-    if (!currentUser) {
-      toast({
-        title: "Error",
-        description: "User not initialized",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    try {
-      // Find the profile that was swiped on
-      const candidate = matches.find(m => m.id === profileId);
-      if (!candidate) {
-        throw new Error("Profile not found");
-      }
-      
-      // Record the swipe in Supabase
-      await recordSwipe(currentUser.id, profileId, 'right');
-      
-      // Check if this is a mutual match
-      const { data: reciprocal, error } = await supabase
-        .from('swipes')
-        .select('*')
-        .eq('from_id', profileId)
-        .eq('to_id', currentUser.id)
-        .eq('direction', 'right')
-        .single();
-      
-      if (error && error.code !== 'PGRST116') { // PGRST116 means no results found
-        throw error;
-      }
-      
-      // If there's a reciprocal swipe (mutual match), show the match modal
-      if (reciprocal) {
-        showMatchPopup(candidate);
-      }
-      
-      // Pro users have unlimited swipes, only count for free users
-      if (!isPro) {
-        // Register the swipe action for the limit counter
-        registerSwipe();
-        
-        // Navigate to paywall if no swipes remaining
-        if (swipesLeft <= 1) { // Check if this swipe will deplete remaining swipes
-          setLocation('/paywall');
-        }
-      }
-      
-      // Remove the profile from the deck
-      setMatches(prev => prev.filter(p => p.id !== profileId));
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to record swipe",
-        variant: "destructive"
-      });
-    }
-  };
-  
-  // Reset criteria and navigate back
-  const handleResetCriteria = () => {
-    setLocation('/criteria');
-  };
-  
-  // Handle when all profiles have been swiped
-  const handleEmptyDeck = () => {
-    // You could fetch more matches or show a message
-    console.log('No more matches!');
-  };
-  
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        <span className="ml-3 text-lg">{t('common.loading')}</span>
       </div>
     );
   }
-  
+
+  // If a match is selected, show chat interface
+  if (selectedMatch) {
+    return (
+      <div className="max-w-md mx-auto h-screen flex flex-col">
+        {/* Chat Header */}
+        <div className="flex items-center p-4 border-b border-gray-200 dark:border-gray-700">
+          <button 
+            onClick={() => setSelectedMatch(null)}
+            className="mr-3 text-primary hover:text-primary-dark"
+          >
+            ←
+          </button>
+          <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden mr-3">
+            {selectedMatch.profile?.photo ? (
+              <img 
+                src={selectedMatch.profile.photo} 
+                alt={selectedMatch.profile.name} 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-400">
+                👤
+              </div>
+            )}
+          </div>
+          <div>
+            <h3 className="font-semibold">{selectedMatch.profile?.name}</h3>
+            <p className="text-sm text-gray-500">Online</p>
+          </div>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {messages.map((message) => (
+            <div 
+              key={message.id}
+              className={`flex ${message.userId === user?.id ? 'justify-end' : 'justify-start'}`}
+            >
+              <div 
+                className={`max-w-xs px-4 py-2 rounded-lg ${
+                  message.userId === user?.id 
+                    ? 'bg-primary text-white' 
+                    : 'bg-gray-200 dark:bg-gray-700'
+                }`}
+              >
+                <p className="text-sm">{message.message}</p>
+                <p className="text-xs opacity-70 mt-1">
+                  {new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Message Input */}
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center space-x-2">
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+              placeholder="Type a message..."
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-800"
+            />
+            <button
+              onClick={handleSendMessage}
+              disabled={!newMessage.trim()}
+              className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Send
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Main matches list view
   return (
     <div className="max-w-md mx-auto">
-      {/* Show freemium banner if user is not Pro and has 5 or fewer swipes left */}
-      {!isPro && swipesLeft <= 5 && (
-        <FreemiumBanner swipesLeft={swipesLeft} />
-      )}
-      
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-center">{t('matches.title')}</h1>
-        <p className="text-center text-gray-500 dark:text-gray-400 mt-2">
-          {isPro 
-            ? t('paywall.feature1') // "Unlimited swipes" for Pro users
-            : t('matches.remaining', { remaining: swipesLeft })
-          }
-        </p>
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">{t('matches.title', 'Matches')}</h1>
+        <div className="text-sm text-gray-600 dark:text-gray-400">
+          {matches.length} {matches.length === 1 ? 'match' : 'matches'}
+        </div>
       </div>
-      
-      <SwipeDeck 
-        profiles={matches}
-        onSwipeLeft={handleSwipeLeft}
-        onSwipeRight={handleSwipeRight}
-        onEmpty={handleEmptyDeck}
-      />
-      
-      <div className="text-center">
-        <button 
-          className="text-secondary hover:text-secondary-dark font-medium"
-          onClick={handleResetCriteria}
-        >
-          {t('matches.resetCriteria')}
-        </button>
-      </div>
-      
-      {/* Only show ads to non-Pro users */}
-      {!isPro && <BannerAdPlaceholder />}
-      
-      {/* Match Modal */}
-      {showMatchModal && matchedProfile && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full text-center shadow-xl">
-            <h2 className="text-2xl font-bold mb-4 text-primary">It's a Match!</h2>
-            <p className="mb-6">You and {matchedProfile.name} liked each other</p>
-            
-            <div className="flex items-center justify-center space-x-4 mb-6">
-              {/* User Avatar */}
-              <div className="w-24 h-24 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
-                <img 
-                  src="https://placehold.co/100x100/png?text=You" 
-                  alt="Your profile" 
-                  className="w-full h-full object-cover"
-                />
+
+      {matches.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">💔</div>
+          <h3 className="text-lg font-semibold mb-2">No matches yet</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            Keep swiping to find your perfect match!
+          </p>
+          <button
+            onClick={() => setLocation('/home')}
+            className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary-dark transition"
+          >
+            Start Swiping
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {matches.map((match) => (
+            <div 
+              key={match.id}
+              onClick={() => handleMatchSelect(match)}
+              className="flex items-center p-4 bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-md transition cursor-pointer"
+            >
+              <div className="w-16 h-16 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden mr-4">
+                {match.profile?.photo ? (
+                  <img 
+                    src={match.profile.photo} 
+                    alt={match.profile.name} 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-400">
+                    👤
+                  </div>
+                )}
               </div>
-              
-              {/* Hearts Icon */}
-              <div className="text-3xl text-red-500">
-                ❤️
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg">{match.profile?.name}</h3>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">
+                  {match.profile?.occupation} • {match.profile?.age}
+                </p>
+                <p className="text-gray-500 dark:text-gray-500 text-xs mt-1">
+                  Matched {new Date(match.createdAt).toLocaleDateString()}
+                </p>
               </div>
-              
-              {/* Match Avatar */}
-              <div className="w-24 h-24 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
-                <img 
-                  src={matchedProfile.photo} 
-                  alt={matchedProfile.name} 
-                  className="w-full h-full object-cover"
-                />
+              <div className="text-primary">
+                💬
               </div>
             </div>
-            
-            <div className="flex flex-col space-y-4">
-              <button 
-                className="w-full py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition"
-                onClick={() => {
-                  // In a real app, this would open a chat with the matched user
-                  toast({
-                    title: "Feature Coming Soon",
-                    description: "Chat functionality will be available in the next update"
-                  });
-                }}
-              >
-                Send a Message
-              </button>
-              
-              <button 
-                className="w-full py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-                onClick={() => setShowMatchModal(false)}
-              >
-                Keep Swiping
-              </button>
-            </div>
-          </div>
+          ))}
         </div>
       )}
     </div>

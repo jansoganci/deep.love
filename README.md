@@ -10,11 +10,17 @@ To get started with the project, follow these steps:
 # Install dependencies
 npm install
 
-# Start the development server
+# Start the development server (includes both frontend and backend)
 npm run dev
 ```
 
-The application will be available at `localhost:3000` by default.
+The application will be available at:
+- **Frontend**: `http://localhost:5173` (Vite dev server)
+- **Backend API**: `http://localhost:5001` (Express server)
+
+### Database Setup
+
+The SQLite database is automatically initialized when you start the development server. Initial seed data with sample profiles is included for testing.
 
 ## Tech Stack
 
@@ -23,7 +29,10 @@ The application will be available at `localhost:3000` by default.
 - **State & routing**: Wouter (React Router DOM replacement)
 - **Internationalization**: react-i18next
 - **Analytics**: PostHog for event tracking
-- **Backend**: Express.js (lightweight for serving static assets)
+- **Backend**: Express.js + SQLite (custom authentication and data storage)
+- **Database**: SQLite with Better-SQLite3 for local development and production
+
+> **Note**: This project **no longer uses Supabase**. All backend operations (authentication, profiles, matching, swipes) are now handled by a custom Express.js + SQLite backend for better performance and control.
 
 ## Project Structure
 
@@ -42,12 +51,32 @@ client/src/
 └── types/          # TypeScript type definitions
 ```
 
+## API Endpoints
+
+The custom backend provides the following API endpoints:
+
+### Authentication
+- `POST /api/auth/signup` - Create new account
+- `POST /api/auth/login` - User login
+- `POST /api/auth/logout` - User logout
+
+### Profiles
+- `GET /api/profiles/:id` - Get user profile
+- `PUT /api/profiles/:id` - Update user profile
+- `GET /api/matches/:limit` - Get potential matches
+
+### Criteria & Swipes
+- `GET /api/criteria` - Get user matching criteria
+- `POST /api/criteria` - Save user matching criteria
+- `POST /api/swipes` - Record swipe action
+
 ## Environment Variables
 
 The application uses the following environment variables:
 
 - `VITE_PH_PROJECT_KEY` - PostHog analytics project key
 - `VITE_POSTHOG_HOST` - PostHog host URL (optional, defaults to app.posthog.com)
+- `NODE_ENV` - Environment mode (development/production)
 
 ## Features
 

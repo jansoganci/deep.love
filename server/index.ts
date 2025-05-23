@@ -1,10 +1,32 @@
 import express, { type Request, Response, NextFunction } from "express";
+import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { seedInitialData } from "./database";
+import SQLiteStoreFactory from "connect-sqlite3";
+
+// Create SQLite session store
+const SQLiteStore = SQLiteStoreFactory({ session });
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Set up session middleware
+app.use(session({
+  store: new SQLiteStore({
+    db: 'data/sessions.sqlite',
+    dir: process.cwd(),
+    table: 'sessions'
+  }),
+  secret: process.env.SESSION_SECRET || 'deep-love-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+  }
+}));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -37,6 +59,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Seed initial data after database is initialized
+  await seedInitialData();
+  
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -56,15 +81,32 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
+  // Use port from environment variable or fallback to 5001 (changed from 5000)
+  const port = process.env.PORT ? parseInt(process.env.PORT) : 5001;
+  
+  // Try to start the server with the main port
+  const startServer = (attemptPort: number) => {
+    const serverInstance = server.listen({
+      port: attemptPort,
+      host: "0.0.0.0",
+      reusePort: true,
+    }, () => {
+      log(`🚀 Deep Love Server is running on port ${attemptPort}`);
+      log(`📊 API endpoints available at http://localhost:${attemptPort}/api`);
+    });
+
+    serverInstance.on('error', (err: any) => {
+      if (err.code === 'EADDRINUSE') {
+        // If the main port is in use, try an alternative port
+        const alternativePort = attemptPort + 1;
+        log(`⚠️  Port ${attemptPort} is in use, trying port ${alternativePort}...`);
+        startServer(alternativePort);
+      } else {
+        log(`❌ Failed to start server: ${err.message}`);
+        process.exit(1);
+      }
+    });
+  };
+  
+  startServer(port);
 })();

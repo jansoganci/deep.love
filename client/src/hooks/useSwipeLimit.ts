@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
-
-// Maximum number of swipes allowed per day for free users
-export const DAILY_LIMIT = 20;
+import { SWIPE_LIMITS, STORAGE_KEYS } from '../constants/appConstants';
 
 /**
  * Custom hook to manage the daily swipe limit for freemium users
@@ -16,58 +14,71 @@ export function useSwipeLimit() {
 
   // Local storage key for today's swipes
   const getStorageKey = (): string => {
-    return `deepLove_swipes_${getCurrentDate()}`;
+    return `${STORAGE_KEYS.SWIPE_DATE_PREFIX}${getCurrentDate()}`;
   };
 
   // Initialize state with current swipe count from localStorage
   const [swipesLeft, setSwipesLeft] = useState<number>(() => {
-    const currentSwipes = localStorage.getItem(getStorageKey());
-    
-    if (currentSwipes !== null) {
-      const swipesUsed = parseInt(currentSwipes, 10);
-      return Math.max(0, DAILY_LIMIT - swipesUsed);
+    try {
+      const currentSwipes = localStorage.getItem(getStorageKey());
+      
+      if (currentSwipes !== null) {
+        const swipesUsed = parseInt(currentSwipes, 10);
+        return Math.max(0, SWIPE_LIMITS.FREE_USER_DAILY_LIMIT - swipesUsed);
+      }
+      
+      return SWIPE_LIMITS.FREE_USER_DAILY_LIMIT;
+    } catch (error) {
+      console.error("Error initializing swipe count:", error);
+      return SWIPE_LIMITS.FREE_USER_DAILY_LIMIT;
     }
-    
-    return DAILY_LIMIT;
   });
 
   // Reset swipe count at midnight
   const resetMidnight = (): void => {
-    const currentDate = getCurrentDate();
-    const storageKey = `deepLove_swipes_${currentDate}`;
-    
-    // Check if we have a record for today already
-    const currentSwipes = localStorage.getItem(storageKey);
-    
-    if (currentSwipes === null) {
-      // It's a new day, reset the count
-      localStorage.setItem(storageKey, '0');
-      setSwipesLeft(DAILY_LIMIT);
+    try {
+      const currentDate = getCurrentDate();
+      const storageKey = `${STORAGE_KEYS.SWIPE_DATE_PREFIX}${currentDate}`;
+      
+      // Check if we have a record for today already
+      const currentSwipes = localStorage.getItem(storageKey);
+      
+      if (currentSwipes === null) {
+        // It's a new day, reset the count
+        localStorage.setItem(storageKey, '0');
+        setSwipesLeft(SWIPE_LIMITS.FREE_USER_DAILY_LIMIT);
+      }
+    } catch (error) {
+      console.error("Error resetting swipe count at midnight:", error);
     }
   };
 
   // Register a swipe action
   const registerSwipe = (): void => {
-    const storageKey = getStorageKey();
-    const currentSwipes = localStorage.getItem(storageKey);
-    
-    let swipesUsed = 1;
-    
-    if (currentSwipes !== null) {
-      swipesUsed = parseInt(currentSwipes, 10) + 1;
+    try {
+      const storageKey = getStorageKey();
+      const currentSwipes = localStorage.getItem(storageKey);
+      
+      let swipesUsed = 1;
+      
+      if (currentSwipes !== null) {
+        swipesUsed = parseInt(currentSwipes, 10) + 1;
+      }
+      
+      localStorage.setItem(storageKey, swipesUsed.toString());
+      
+      const remaining = Math.max(0, SWIPE_LIMITS.FREE_USER_DAILY_LIMIT - swipesUsed);
+      setSwipesLeft(remaining);
+    } catch (error) {
+      console.error("Error registering swipe:", error);
     }
-    
-    localStorage.setItem(storageKey, swipesUsed.toString());
-    
-    const remaining = Math.max(0, DAILY_LIMIT - swipesUsed);
-    setSwipesLeft(remaining);
   };
 
   // Check for day change when component mounts
   useEffect(() => {
     resetMidnight();
     
-    // Optional: Set up a timer to check for day change if the app is running at midnight
+    // Set up a timer to check for day change if the app is running at midnight
     const midnight = new Date();
     midnight.setHours(24, 0, 0, 0);
     const timeToMidnight = midnight.getTime() - new Date().getTime();
